@@ -1,0 +1,29 @@
+# ForgeIR
+
+> AI-native semantic IR and compiler for reliable, token-efficient software generation.
+
+ForgeIR is a surface language plus a typed semantic program graph, compiler, and agent interface. Generated TypeScript is not the program. Status: M0 hello slice (`int` functions only). Thesis is unproven; do not cite token savings.
+
+## Start
+
+- [Current state](memory/CURRENT.md)
+- [Agent index](docs/agent/INDEX.md)
+- [M0 language](docs/agent/language.md)
+- [Getting started](docs/human/getting-started.md)
+- [Roadmap](docs/human/roadmap.md)
+- [How to work on this repo](AGENTS.md)
+
+## Spec
+
+- [Diagnostics schema](schemas/diagnostics.schema.json)
+- [IR schema](schemas/ir.schema.json)
+- [ADR-001 TypeScript compiler](docs/adr/0001-compiler-implementation-language.md)
+- [ADR-002 TS backend](docs/adr/0002-first-backend.md)
+- [ADR-003 Canonical store](docs/adr/0003-canonical-store-and-ids.md)
+
+## Optional
+
+- [Project invariants](memory/PROJECT.md)
+- [TODO](memory/TODO.md)
+- [Risks](memory/RISKS.md)
+- [Benchmark tasks](benches/tasks.md)

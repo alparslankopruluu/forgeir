@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forgeir.dev/schemas/diagnostics.schema.json",
+  "title": "forge.diag/v1",
+  "type": "object",
+  "required": ["schema", "diagnostics"],
+  "properties": {
+    "schema": { "const": "forge.diag/v1" },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["severity", "code", "message"],
+        "properties": {
+          "severity": { "enum": ["error", "warning"] },
+          "code": { "type": "string" },
+          "message": { "type": "string" },
+          "span": {
+            "type": "object",
+            "required": ["file", "start", "end"],
+            "properties": {
+              "file": { "type": "string" },
+              "start": { "type": "integer" },
+              "end": { "type": "integer" }
+            }
+          },
+          "qid": { "type": "string" },
+          "expected": { "type": "string" },
+          "received": { "type": "string" },
+          "fixes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["kind", "message"],
+              "properties": {
+                "kind": { "type": "string" },
+                "message": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
