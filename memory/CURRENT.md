@@ -51,7 +51,7 @@ None.
 ## Last validated state
 
 ```
-Last validated commit: (update after commit)
+Last validated commit: 559c907
 Current milestone: M1
 Completed: records, if/match, bool, calls, clamp example
 In progress: none
