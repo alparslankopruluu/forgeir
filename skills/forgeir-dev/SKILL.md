@@ -8,7 +8,7 @@ description: Work on the ForgeIR compiler repository. Use when changing parser, 
 You are working on the compiler, not on an app written in ForgeIR.
 
 1. Read `memory/CURRENT.md` and `AGENTS.md` first. Do not dump `packages/**`.
-2. M0 language is `module` / `fn` / `int` / arithmetic only. Do not add records, effects, or backends unless the task says so.
+2. M1 language is `module` / `record` / `fn` / `int` / `bool` / `if` / `match` / calls. Do not add lists, Option, effects, or backends unless the task says so.
 3. Tests live in `tests/`. Write or update a failing test before production code.
 4. Validate with `pnpm test` and `pnpm typecheck`. For the hello slice also run `pnpm forge run examples/add/main.fir`.
 5. Public artifacts are English. Commits are Conventional Commits.

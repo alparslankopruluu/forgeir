@@ -2,9 +2,9 @@
 
 ## P0
 
-- Records and field access
-- `if` / `match`
-- Richer diagnostic `fixes[]` on TYPE-002
+- (done) Records and field access
+- (done) `if` / `match`
+- (done) Richer diagnostic `fixes[]` on TYPE-002
 
 ## P1
 

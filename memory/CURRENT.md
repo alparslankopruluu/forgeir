@@ -1,20 +1,23 @@
 # CURRENT
 
-Current milestone: M0 (genesis + hello slice)
+Current milestone: M1 (language kernel, partial)
 
-Current implementation slice: parse / check / emit-ts / run for `int` functions; MCP stub.
+Current implementation slice: records, bool, comparisons, if/match, field access, construct, calls, TYPE-002 fixes.
 
 ## What is working
 
-- Handwritten lexer/parser for the M0 grammar
-- Int-only typechecker with JSON diagnostics
-- Deterministic TypeScript emit
-- `forge parse | check | emit | run | mcp`
-- Example `examples/add/main.fir` runs `add(2, 3) → 5`
+- M0 int functions (`examples/add`)
+- Records and field access
+- `if` / `else` expressions (else required)
+- `match` on int with required `_` arm
+- `bool` and comparisons
+- Named function calls and record construct
+- TYPE-002 diagnostics include `fixes[]`
+- `examples/clamp` runs `clamp10(15) → 10`
 
 ## What is incomplete
 
-- Records, control flow, Option/Result, effects, extern
+- lists, Option/Result
 - `forge.lock.json` identity table
 - Semantic patch
 - MCP query/get/patch
@@ -22,21 +25,20 @@ Current implementation slice: parse / check / emit-ts / run for `int` functions;
 
 ## Current blockers
 
-None for M0.
+None.
 
 ## Next highest-priority actions
 
-1. M1: records + `if`/`match`
-2. M1: lists and Option/Result builtins
-3. M2: lockfile nids + `forge_query`
+1. M1 remaining: lists + Option/Result builtins
+2. M2: lockfile nids + `forge_query`
+3. Semantic `replace_expr` patch preview
 
 ## Relevant files
 
 - `packages/syntax/src/parser.ts`
 - `packages/sema/src/check.ts`
 - `packages/emit-ts/src/emit.ts`
-- `packages/cli/src/main.ts`
-- `examples/add/main.fir`
+- `examples/clamp/main.fir`
 
 ## Relevant tests
 
@@ -44,16 +46,16 @@ None for M0.
 - `tests/check.test.ts`
 - `tests/emit.test.ts`
 - `tests/e2e/add.test.ts`
-- `tests/mcp.test.ts`
+- `tests/e2e/clamp.test.ts`
 
 ## Last validated state
 
 ```
-Last validated commit: 241bc05
-Current milestone: M0
-Completed: parse/check/emit/run for int functions; MCP stub; docs/memory
+Last validated commit: (update after commit)
+Current milestone: M1
+Completed: records, if/match, bool, calls, clamp example
 In progress: none
 Known issue: TS `number` emit is not i64-accurate (ADR-002)
-Next recommended action: M1 records and conditionals
-Validation commands: pnpm test && pnpm typecheck && pnpm forge run examples/add/main.fir
+Next recommended action: lists and Option/Result
+Validation commands: pnpm test && pnpm typecheck && pnpm forge run examples/clamp/main.fir clamp10 15
 ```

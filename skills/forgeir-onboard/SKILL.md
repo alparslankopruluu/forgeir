@@ -1,19 +1,24 @@
 ---
 name: forgeir-onboard
-description: Learn ForgeIR M0 surface syntax and toolchain. Use when writing or reading .fir files, running forge check/emit/run, or onboarding an agent to a ForgeIR program.
+description: Learn ForgeIR M1 surface syntax and toolchain. Use when writing or reading .fir files, running forge check/emit/run, or onboarding an agent to a ForgeIR program.
 ---
 
-# ForgeIR onboard (M0)
+# ForgeIR onboard (M1)
 
 Read `docs/agent/language.md` (one page). Do not load the full human guide.
 
-M0 can express:
+M1 can express records, `bool`, `if`/`else`, `match`, field access, constructs, and calls:
 
 ```
-module examples.add
+module examples.clamp
 
-fn add(a: int, b: int) -> int {
-  a + b
+record Bounds {
+  lo: int
+  hi: int
+}
+
+fn clamp10(x: int) -> int {
+  if x < 0 { 0 } else { if x > 10 { 10 } else { x } }
 }
 ```
 
@@ -24,8 +29,9 @@ pnpm forge check path.fir
 pnpm forge check --json path.fir
 pnpm forge emit path.fir
 pnpm forge run path.fir
+pnpm forge run examples/clamp/main.fir clamp10 15
 ```
 
-If `check --json` reports errors, repair the `.fir` source (or later, apply a semantic patch). Do not edit emitted `.ts`.
+If `check --json` reports errors, repair the `.fir` source. Do not edit emitted `.ts`.
 
-Anything beyond `module`, `fn`, `int`, and `+ - * /` is out of language. Expect `PARSE-001`.
+Out of language: `extern`, lists, Option/Result, effects. Expect `PARSE-001`.

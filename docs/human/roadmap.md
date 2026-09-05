@@ -2,13 +2,15 @@
 
 Measurable milestones. Features listed here are not shipped until the acceptance line is true.
 
-## M0 — Genesis + hello (current)
+## M0 — Genesis + hello
 
 Parse, check, emit TypeScript, and run `examples/add`. JSON diagnostics. MCP stub (`forge_status`, `forge_validate`). Memory Bank and ADRs.
 
-## M1 — Language kernel
+## M1 — Language kernel (current)
 
-Records, `if`/`match`, lists, `Option`/`Result`, richer diagnostics.
+**Done:** records, `bool`, comparisons, `if`/`else`, `match`, field access, calls, TYPE-002 `fixes[]`.
+
+**Still open:** lists, `Option`/`Result`.
 
 ## M2 — Addressability + MCP
 
