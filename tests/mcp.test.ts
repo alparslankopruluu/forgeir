@@ -29,7 +29,7 @@ describe("MCP stub", () => {
     };
     expect(body.ok).toBe(true);
     expect(body.schema).toBe("forge.mcp/v1");
-    expect(body.data.milestone).toBe("M0");
+    expect(body.data.milestone).toBe("M1");
     expect(body.data.name).toBe("ForgeIR");
   });
 });

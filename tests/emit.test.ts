@@ -26,4 +26,30 @@ fn add(a: int, b: int) -> int {
       ].join("\n"),
     );
   });
+
+  it("emits record types, if, and object literals", () => {
+    const parsed = parse(
+      `module examples.clamp
+record Bounds {
+  lo: int
+  hi: int
+}
+fn clamp10(x: int) -> int {
+  if x < 0 {
+    0
+  } else {
+    x
+  }
+}
+`,
+      "clamp.fir",
+    );
+    if (!parsed.module) {
+      throw new Error("expected module");
+    }
+    const ts = emitTs(parsed.module);
+    expect(ts).toContain("export type Bounds = {");
+    expect(ts).toContain("lo: number;");
+    expect(ts).toContain("((x < 0) ? 0 : x)");
+  });
 });

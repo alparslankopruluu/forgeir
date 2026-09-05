@@ -87,9 +87,17 @@ export async function handleMcpRequest(
             result: textResult(
               envelope({
                 name: "ForgeIR",
-                milestone: "M0",
+                milestone: "M1",
                 version: "0.0.0",
-                implemented: ["parse", "check", "emit", "run"],
+                implemented: [
+                  "parse",
+                  "check",
+                  "emit",
+                  "run",
+                  "records",
+                  "if",
+                  "match",
+                ],
                 experimental: ["mcp stub"],
               }),
             ),

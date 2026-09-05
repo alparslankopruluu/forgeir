@@ -118,7 +118,7 @@ function requireFile(path: string | undefined): string {
 }
 
 function help(): string {
-  return `ForgeIR M0 compiler
+  return `ForgeIR M1 compiler
 
 Usage:
   forge parse <file>
