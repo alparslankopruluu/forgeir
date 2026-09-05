@@ -1,6 +1,18 @@
 import type { Span } from "@forgeir/core";
 import { Codes, type Diagnostic } from "@forgeir/diag";
-import type { BinaryOp, Expr, Fn, Module, Param, TypeRef } from "./ast.ts";
+import type {
+  BinaryOp,
+  Expr,
+  Field,
+  FieldInit,
+  Fn,
+  MatchArm,
+  Module,
+  Param,
+  Pattern,
+  RecordDecl,
+  TypeRef,
+} from "./ast.ts";
 import { lex, type Token, type TokenKind } from "./lexer.ts";
 
 export type ParseResult = {
@@ -13,6 +25,15 @@ class ParseError extends Error {
     super(diagnostic.message);
   }
 }
+
+const COMPARE: Record<string, BinaryOp> = {
+  eqeq: "==",
+  ne: "!=",
+  lt: "<",
+  gt: ">",
+  le: "<=",
+  ge: ">=",
+};
 
 export function parse(source: string, file: string): ParseResult {
   const lexed = lex(source, file);
@@ -42,23 +63,62 @@ class Parser {
     const start = this.peek().span.start;
     this.expect("module");
     const name = this.parseQid();
+    const records: RecordDecl[] = [];
     const functions: Fn[] = [];
     while (this.peek().kind !== "eof") {
-      if (this.peek().kind !== "fn") {
-        this.fail(
-          Codes.PARSE_UNEXPECTED,
-          `expected fn, found ${this.peek().kind}${this.peek().value ? ` '${this.peek().value}'` : ""}`,
-          this.peek().span,
-        );
+      if (this.peek().kind === "record") {
+        records.push(this.parseRecord());
+        continue;
       }
-      functions.push(this.parseFn());
+      if (this.peek().kind === "fn") {
+        functions.push(this.parseFn());
+        continue;
+      }
+      this.fail(
+        Codes.PARSE_UNEXPECTED,
+        `expected record or fn, found ${this.peek().kind}${this.peek().value ? ` '${this.peek().value}'` : ""}`,
+        this.peek().span,
+      );
     }
     const end = this.peek().span.end;
     return {
       kind: "module",
       name,
+      records,
       functions,
       span: { file: this.file, start, end },
+    };
+  }
+
+  private parseRecord(): RecordDecl {
+    const start = this.peek().span.start;
+    this.expect("record");
+    const nameTok = this.expect("ident");
+    this.expect("lbrace");
+    const fields: Field[] = [];
+    while (this.peek().kind !== "rbrace" && this.peek().kind !== "eof") {
+      const fieldName = this.expect("ident");
+      this.expect("colon");
+      const type = this.parseType();
+      if (this.peek().kind === "comma") {
+        this.advance();
+      }
+      fields.push({
+        name: fieldName.value,
+        type,
+        span: {
+          file: this.file,
+          start: fieldName.span.start,
+          end: type.span.end,
+        },
+      });
+    }
+    const endTok = this.expect("rbrace");
+    return {
+      kind: "record",
+      name: nameTok.value,
+      fields,
+      span: { file: this.file, start, end: endTok.span.end },
     };
   }
 
@@ -71,16 +131,14 @@ class Parser {
     this.expect("rparen");
     this.expect("arrow");
     const returnType = this.parseType();
-    this.expect("lbrace");
-    const body = this.parseExpr();
-    const endTok = this.expect("rbrace");
+    const body = this.parseBlock();
     return {
       kind: "fn",
       name: nameTok.value,
       params,
       returnType,
       body,
-      span: { file: this.file, start, end: endTok.span.end },
+      span: { file: this.file, start, end: body.span.end },
     };
   }
 
@@ -122,8 +180,39 @@ class Parser {
     return parts.join(".");
   }
 
+  private parseBlock(): Expr {
+    this.expect("lbrace");
+    const expr = this.parseExpr();
+    this.expect("rbrace");
+    return expr;
+  }
+
   private parseExpr(): Expr {
-    return this.parseAdd();
+    return this.parseCompare();
+  }
+
+  private parseCompare(): Expr {
+    let left = this.parseAdd();
+    const op = COMPARE[this.peek().kind];
+    if (!op) {
+      return left;
+    }
+    while (COMPARE[this.peek().kind]) {
+      const opTok = this.advance();
+      const right = this.parseAdd();
+      const cmp = COMPARE[opTok.kind];
+      if (!cmp) {
+        this.fail(Codes.PARSE_UNEXPECTED, "expected comparison", opTok.span);
+      }
+      left = {
+        kind: "binary",
+        op: cmp,
+        left,
+        right,
+        span: joinSpan(left.span, right.span),
+      };
+    }
+    return left;
   }
 
   private parseAdd(): Expr {
@@ -143,10 +232,10 @@ class Parser {
   }
 
   private parseMul(): Expr {
-    let left = this.parsePrimary();
+    let left = this.parsePostfix();
     while (this.peek().kind === "star" || this.peek().kind === "slash") {
       const opTok = this.advance();
-      const right = this.parsePrimary();
+      const right = this.parsePostfix();
       const op: BinaryOp = opTok.kind === "star" ? "*" : "/";
       left = {
         kind: "binary",
@@ -159,14 +248,81 @@ class Parser {
     return left;
   }
 
-  private parsePrimary(): Expr {
+  private parsePostfix(): Expr {
+    let expr = this.parseAtom();
+    while (true) {
+      if (this.peek().kind === "dot") {
+        this.advance();
+        const field = this.expect("ident");
+        expr = {
+          kind: "field",
+          object: expr,
+          field: field.value,
+          span: joinSpan(expr.span, field.span),
+        };
+        continue;
+      }
+      if (this.peek().kind === "lparen") {
+        if (expr.kind !== "name") {
+          this.fail(
+            Codes.PARSE_UNEXPECTED,
+            "only named functions can be called",
+            this.peek().span,
+          );
+        }
+        this.advance();
+        const args = this.parseArgList();
+        const endTok = this.expect("rparen");
+        expr = {
+          kind: "call",
+          name: expr.name,
+          args,
+          span: {
+            file: this.file,
+            start: expr.span.start,
+            end: endTok.span.end,
+          },
+        };
+        continue;
+      }
+      break;
+    }
+    return expr;
+  }
+
+  private parseArgList(): Expr[] {
+    if (this.peek().kind === "rparen") {
+      return [];
+    }
+    const args = [this.parseExpr()];
+    while (this.peek().kind === "comma") {
+      this.advance();
+      args.push(this.parseExpr());
+    }
+    return args;
+  }
+
+  private parseAtom(): Expr {
     const tok = this.peek();
+    if (tok.kind === "if") {
+      return this.parseIf();
+    }
+    if (tok.kind === "match") {
+      return this.parseMatch();
+    }
+    if (tok.kind === "true" || tok.kind === "false") {
+      this.advance();
+      return { kind: "bool", value: tok.kind === "true", span: tok.span };
+    }
     if (tok.kind === "number") {
       this.advance();
       return { kind: "int", value: Number(tok.value), span: tok.span };
     }
     if (tok.kind === "ident") {
       this.advance();
+      if (this.isConstructStart()) {
+        return this.parseConstruct(tok);
+      }
       return { kind: "name", name: tok.value, span: tok.span };
     }
     if (tok.kind === "lparen") {
@@ -181,6 +337,117 @@ class Parser {
     this.fail(
       Codes.PARSE_UNEXPECTED,
       `unexpected token '${tok.value}'`,
+      tok.span,
+    );
+  }
+
+  private isConstructStart(): boolean {
+    if (this.peek().kind !== "lbrace") {
+      return false;
+    }
+    const inner = this.peekAt(1);
+    const after = this.peekAt(2);
+    return (
+      inner.kind === "rbrace" ||
+      (inner.kind === "ident" && after.kind === "colon")
+    );
+  }
+
+  private peekAt(offset: number): Token {
+    const tok = this.tokens[this.i + offset];
+    if (tok) {
+      return tok;
+    }
+    return this.peek();
+  }
+
+  private parseConstruct(nameTok: Token): Expr {
+    this.expect("lbrace");
+    const fields: FieldInit[] = [];
+    while (this.peek().kind !== "rbrace" && this.peek().kind !== "eof") {
+      const fieldName = this.expect("ident");
+      this.expect("colon");
+      const value = this.parseExpr();
+      if (this.peek().kind === "comma") {
+        this.advance();
+      }
+      fields.push({
+        name: fieldName.value,
+        value,
+        span: joinSpan(fieldName.span, value.span),
+      });
+    }
+    const endTok = this.expect("rbrace");
+    return {
+      kind: "construct",
+      name: nameTok.value,
+      fields,
+      span: {
+        file: this.file,
+        start: nameTok.span.start,
+        end: endTok.span.end,
+      },
+    };
+  }
+
+  private parseIf(): Expr {
+    const start = this.peek().span.start;
+    this.expect("if");
+    const cond = this.parseExpr();
+    const thenBody = this.parseBlock();
+    this.expect("else");
+    const elseBody = this.parseBlock();
+    return {
+      kind: "if",
+      cond,
+      thenBody,
+      elseBody,
+      span: { file: this.file, start, end: elseBody.span.end },
+    };
+  }
+
+  private parseMatch(): Expr {
+    const start = this.peek().span.start;
+    this.expect("match");
+    const scrutinee = this.parseExpr();
+    this.expect("lbrace");
+    const arms: MatchArm[] = [];
+    while (this.peek().kind !== "rbrace" && this.peek().kind !== "eof") {
+      arms.push(this.parseArm());
+    }
+    const endTok = this.expect("rbrace");
+    return {
+      kind: "match",
+      scrutinee,
+      arms,
+      span: { file: this.file, start, end: endTok.span.end },
+    };
+  }
+
+  private parseArm(): MatchArm {
+    const pattern = this.parsePattern();
+    this.expect("fatarrow");
+    const body = this.parseExpr();
+    return {
+      pattern,
+      body,
+      span: joinSpan(pattern.span, body.span),
+    };
+  }
+
+  private parsePattern(): Pattern {
+    const tok = this.peek();
+    if (tok.kind === "number") {
+      this.advance();
+      return { kind: "int", value: Number(tok.value), span: tok.span };
+    }
+    if (tok.kind === "ident" && tok.value === "_") {
+      this.advance();
+      return { kind: "wildcard", span: tok.span };
+    }
+    this.fail(
+      Codes.PARSE_UNEXPECTED,
+      "expected match pattern (int or _)",
       tok.span,
     );
   }

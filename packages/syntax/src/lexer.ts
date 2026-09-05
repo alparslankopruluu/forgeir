@@ -4,10 +4,17 @@ import { Codes, type Diagnostic } from "@forgeir/diag";
 export type TokenKind =
   | "module"
   | "fn"
+  | "record"
+  | "if"
+  | "else"
+  | "match"
+  | "true"
+  | "false"
   | "ident"
   | "number"
   | "colon"
   | "arrow"
+  | "fatarrow"
   | "lparen"
   | "rparen"
   | "lbrace"
@@ -18,6 +25,12 @@ export type TokenKind =
   | "star"
   | "slash"
   | "dot"
+  | "eqeq"
+  | "ne"
+  | "lt"
+  | "gt"
+  | "le"
+  | "ge"
   | "eof";
 
 export type Token = {
@@ -34,6 +47,12 @@ export type LexResult = {
 const KEYWORDS: Record<string, TokenKind> = {
   module: "module",
   fn: "fn",
+  record: "record",
+  if: "if",
+  else: "else",
+  match: "match",
+  true: "true",
+  false: "false",
 };
 
 function isIdentStart(ch: string): boolean {
@@ -107,6 +126,36 @@ export function lex(source: string, file: string): LexResult {
       continue;
     }
 
+    if (ch === "=" && source[i + 1] === ">") {
+      i += 2;
+      push("fatarrow", start, i, "=>");
+      continue;
+    }
+
+    if (ch === "=" && source[i + 1] === "=") {
+      i += 2;
+      push("eqeq", start, i, "==");
+      continue;
+    }
+
+    if (ch === "!" && source[i + 1] === "=") {
+      i += 2;
+      push("ne", start, i, "!=");
+      continue;
+    }
+
+    if (ch === "<" && source[i + 1] === "=") {
+      i += 2;
+      push("le", start, i, "<=");
+      continue;
+    }
+
+    if (ch === ">" && source[i + 1] === "=") {
+      i += 2;
+      push("ge", start, i, ">=");
+      continue;
+    }
+
     const singles: Record<string, TokenKind> = {
       ":": "colon",
       "(": "lparen",
@@ -119,6 +168,8 @@ export function lex(source: string, file: string): LexResult {
       "*": "star",
       "/": "slash",
       ".": "dot",
+      "<": "lt",
+      ">": "gt",
     };
     const kind = singles[ch];
     if (kind) {

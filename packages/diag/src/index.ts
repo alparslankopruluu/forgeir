@@ -46,4 +46,6 @@ export const Codes = {
   PARSE_EOF: "PARSE-002",
   TYPE_UNKNOWN: "TYPE-001",
   TYPE_MISMATCH: "TYPE-002",
+  TYPE_UNKNOWN_TYPE: "TYPE-003",
+  TYPE_DUPLICATE: "TYPE-004",
 } as const;
