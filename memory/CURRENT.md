@@ -48,10 +48,8 @@ None for M0.
 
 ## Last validated state
 
-See handoff. Update the commit hash after the M0 commit lands.
-
 ```
-Last validated commit: (pending first commit)
+Last validated commit: 241bc05
 Current milestone: M0
 Completed: parse/check/emit/run for int functions; MCP stub; docs/memory
 In progress: none
