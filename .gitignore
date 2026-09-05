@@ -1,0 +1,10 @@
+node_modules/
+dist/
+coverage/
+.forge/cache/
+benches/artifacts/*
+!benches/artifacts/README.md
+*.tsbuildinfo
+.DS_Store
+.env
+.env.*

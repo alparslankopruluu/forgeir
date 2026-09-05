@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "paths": {
+      "@forgeir/core": ["./packages/core/src/index.ts"],
+      "@forgeir/diag": ["./packages/diag/src/index.ts"],
+      "@forgeir/syntax": ["./packages/syntax/src/index.ts"],
+      "@forgeir/sema": ["./packages/sema/src/index.ts"],
+      "@forgeir/emit-ts": ["./packages/emit-ts/src/index.ts"],
+      "@forgeir/mcp": ["./packages/mcp/src/index.ts"]
+    }
+  },
+  "include": ["packages/*/src/**/*.ts", "tests/**/*.ts", "vitest.config.ts"]
+}

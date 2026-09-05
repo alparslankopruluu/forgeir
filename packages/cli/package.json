@@ -1,0 +1,19 @@
+{
+  "name": "@forgeir/cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "forge": "./src/main.ts"
+  },
+  "exports": {
+    ".": "./src/main.ts"
+  },
+  "dependencies": {
+    "@forgeir/diag": "workspace:*",
+    "@forgeir/emit-ts": "workspace:*",
+    "@forgeir/mcp": "workspace:*",
+    "@forgeir/sema": "workspace:*",
+    "@forgeir/syntax": "workspace:*"
+  }
+}

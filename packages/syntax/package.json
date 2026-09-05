@@ -1,0 +1,13 @@
+{
+  "name": "@forgeir/syntax",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@forgeir/core": "workspace:*",
+    "@forgeir/diag": "workspace:*"
+  }
+}
