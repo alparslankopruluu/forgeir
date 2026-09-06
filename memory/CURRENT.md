@@ -50,7 +50,7 @@ None.
 ## Last validated state
 
 ```
-Last validated commit: 96db4f2
+Last validated commit: 92eae54
 Current milestone: M2
 Completed: lockfile nids; query/get; replace_expr preview/apply
 In progress: none
