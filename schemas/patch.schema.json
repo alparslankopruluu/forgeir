@@ -9,14 +9,28 @@
     "ops": {
       "type": "array",
       "items": {
-        "type": "object",
-        "required": ["op", "expr"],
-        "properties": {
-          "op": { "const": "replace_expr" },
-          "qid": { "type": "string" },
-          "nid": { "type": "string" },
-          "expr": { "type": "string" }
-        }
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["op", "expr"],
+            "properties": {
+              "op": { "const": "replace_expr" },
+              "qid": { "type": "string" },
+              "nid": { "type": "string" },
+              "expr": { "type": "string" }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["op", "name"],
+            "properties": {
+              "op": { "const": "rename" },
+              "qid": { "type": "string" },
+              "nid": { "type": "string" },
+              "name": { "type": "string" }
+            }
+          }
+        ]
       }
     }
   }
