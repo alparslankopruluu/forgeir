@@ -3,6 +3,7 @@ import { Codes, type Diagnostic } from "@forgeir/diag";
 import type {
   BinaryOp,
   Expr,
+  Extern,
   Field,
   FieldInit,
   Fn,
@@ -65,6 +66,7 @@ class Parser {
     const name = this.parseQid();
     const records: RecordDecl[] = [];
     const functions: Fn[] = [];
+    const externs: Extern[] = [];
     while (this.peek().kind !== "eof") {
       if (this.peek().kind === "record") {
         records.push(this.parseRecord());
@@ -74,9 +76,13 @@ class Parser {
         functions.push(this.parseFn());
         continue;
       }
+      if (this.peek().kind === "extern") {
+        externs.push(this.parseExtern());
+        continue;
+      }
       this.fail(
         Codes.PARSE_UNEXPECTED,
-        `expected record or fn, found ${this.peek().kind}${this.peek().value ? ` '${this.peek().value}'` : ""}`,
+        `expected record, fn, or extern, found ${this.peek().kind}${this.peek().value ? ` '${this.peek().value}'` : ""}`,
         this.peek().span,
       );
     }
@@ -86,6 +92,7 @@ class Parser {
       name,
       records,
       functions,
+      externs,
       span: { file: this.file, start, end },
     };
   }
@@ -131,15 +138,59 @@ class Parser {
     this.expect("rparen");
     this.expect("arrow");
     const returnType = this.parseType();
+    const effects = this.parseEffectSet();
     const body = this.parseBlock();
     return {
       kind: "fn",
       name: nameTok.value,
       params,
       returnType,
+      effects,
       body,
       span: { file: this.file, start, end: body.span.end },
     };
+  }
+
+  private parseExtern(): Extern {
+    const start = this.peek().span.start;
+    this.expect("extern");
+    this.expect("fn");
+    const nameTok = this.expect("ident");
+    this.expect("lparen");
+    const params = this.parseParams();
+    this.expect("rparen");
+    this.expect("arrow");
+    const returnType = this.parseType();
+    const effects = this.parseEffectSet();
+    this.expect("eq");
+    const targetTok = this.expect("string");
+    return {
+      kind: "extern",
+      name: nameTok.value,
+      params,
+      returnType,
+      effects,
+      target: targetTok.value,
+      span: { file: this.file, start, end: targetTok.span.end },
+    };
+  }
+
+  private parseEffectSet(): string[] {
+    if (this.peek().kind !== "bang") {
+      return [];
+    }
+    this.advance();
+    this.expect("lbrace");
+    const effects: string[] = [];
+    while (this.peek().kind !== "rbrace" && this.peek().kind !== "eof") {
+      const nameTok = this.expect("ident");
+      effects.push(nameTok.value);
+      if (this.peek().kind === "comma") {
+        this.advance();
+      }
+    }
+    this.expect("rbrace");
+    return effects;
   }
 
   private parseParams(): Param[] {

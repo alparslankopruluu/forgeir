@@ -78,7 +78,18 @@ export type Fn = {
   name: string;
   params: Param[];
   returnType: TypeRef;
+  effects: string[];
   body: Expr;
+  span: Span;
+};
+
+export type Extern = {
+  kind: "extern";
+  name: string;
+  params: Param[];
+  returnType: TypeRef;
+  effects: string[];
+  target: string;
   span: Span;
 };
 
@@ -87,5 +98,21 @@ export type Module = {
   name: string;
   records: RecordDecl[];
   functions: Fn[];
+  externs: Extern[];
   span: Span;
 };
+
+export function splitExternTarget(
+  target: string,
+): { spec: string; exportName: string } | null {
+  const i = target.lastIndexOf(".");
+  if (i <= 0 || i === target.length - 1) {
+    return null;
+  }
+  const spec = target.slice(0, i);
+  const exportName = target.slice(i + 1);
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(exportName)) {
+    return null;
+  }
+  return { spec, exportName };
+}

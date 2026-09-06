@@ -8,6 +8,7 @@ export type TokenKind =
   | "if"
   | "else"
   | "match"
+  | "extern"
   | "true"
   | "false"
   | "ident"
@@ -31,6 +32,8 @@ export type TokenKind =
   | "gt"
   | "le"
   | "ge"
+  | "bang"
+  | "eq"
   | "lbracket"
   | "rbracket"
   | "string"
@@ -54,6 +57,7 @@ const KEYWORDS: Record<string, TokenKind> = {
   if: "if",
   else: "else",
   match: "match",
+  extern: "extern",
   true: "true",
   false: "false",
 };
@@ -190,6 +194,18 @@ export function lex(source: string, file: string): LexResult {
     if (ch === "!" && source[i + 1] === "=") {
       i += 2;
       push("ne", start, i, "!=");
+      continue;
+    }
+
+    if (ch === "!") {
+      i += 1;
+      push("bang", start, i, "!");
+      continue;
+    }
+
+    if (ch === "=") {
+      i += 1;
+      push("eq", start, i, "=");
       continue;
     }
 
