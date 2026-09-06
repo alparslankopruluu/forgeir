@@ -8,42 +8,32 @@ Decl    := Record | Fn
 Record  := "record" ident "{" Field* "}"
 Field   := ident ":" Type
 Fn      := "fn" ident "(" Params? ")" "->" Type "{" Expr "}"
-Params  := Param ("," Param)*
-Param   := ident ":" Type
-Type    := "int" | "bool" | ident
-Expr    := Compare | If | Match | Call | Construct | FieldGet | lit
+Type    := "int" | "bool" | "str" | ident | "list" "[" Type "]"
+         | "Option" "[" Type "]" | "Result" "[" Type "," Type "]"
 If      := "if" Expr "{" Expr "}" "else" "{" Expr "}"
 Match   := "match" Expr "{" Arm* "}"
-Arm     := (int | "_") "=>" Expr
+Arm     := Pattern "=>" Expr
+Pattern := int | "_" | "None" | "Some" "(" ident ")" | "Ok" "(" ident ")" | "Err" "(" ident ")"
 ```
 
 - No required semicolons. `//` comments to end of line.
 - Comparisons: `== != < <= > >=` on `int`, result `bool`.
 - `if` is an expression and requires `else`.
-- `match` on `int` requires a `_` arm.
-- Record construct: `Bounds { lo: 0, hi: 10 }` (commas optional).
-- Calls: `clamp(x, b)` — named functions only.
-- Unknown syntax is `PARSE-001`. Do not invent `extern`, lists, or Option yet.
+- `match` on `int` requires `_`. `Option` needs `Some`/`None` (or `_`). `Result` needs `Ok`/`Err` (or `_`).
+- List literal `[1, 2]`. Index `xs[i]` has type `Option[T]`.
+- `Some(x)`, `None`, `Ok(x)`, `Err(e)` are builtin constructors.
+- `[]` and `None` need an expected type (parameter, return, or argument).
+- Unknown syntax is `PARSE-001`. Do not invent `extern` yet.
 
 Example:
 
 ```
-module examples.clamp
+module examples.option
 
-record Bounds {
-  lo: int
-  hi: int
-}
-
-fn clamp10(x: int) -> int {
-  if x < 0 {
-    0
-  } else {
-    if x > 10 {
-      10
-    } else {
-      x
-    }
+fn first_or(xs: list[int], fallback: int) -> int {
+  match xs[0] {
+    Some(v) => v
+    None => fallback
   }
 }
 ```

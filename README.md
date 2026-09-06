@@ -10,21 +10,20 @@ This thesis is **unproven**. There are no published token-savings figures in thi
 
 ## Current status
 
-**Milestone M1 — language kernel (partial).** Experimental.
+**Milestone M1 — language kernel.** Experimental.
 
 ### Implemented
 
-- Surface: `module`, `record`, `fn`, `int`, `bool`, arithmetic, comparisons, `if`/`else`, `match`, field access, construct, calls
+- Surface: `module`, `record`, `fn`, `int`, `bool`, `str`, `list[T]`, `Option[T]`, `Result[T, E]`, arithmetic, comparisons, `if`/`else`, `match`, field access, construct, calls
 - Parse, typecheck, JSON diagnostics (`PARSE-001` … `TYPE-004`) including TYPE-002 repair `fixes[]`
 - Deterministic TypeScript ESM emit
 - CLI: `forge parse | check | emit | run`
-- Examples: `examples/add`, `examples/clamp`
+- Examples: `examples/add`, `examples/clamp`, `examples/option`
 - MCP stub: `forge_status`, `forge_validate`
 - Agent docs, Memory Bank, ADRs
 
 ### Not implemented (do not treat as shipped)
 
-- lists, Option/Result
 - Effects, `extern`, package registry
 - Semantic patch, lockfile nids, query MCP tools
 - LLVM, WASM, JVM, Swift, Kotlin backends
@@ -42,6 +41,7 @@ pnpm test
 pnpm forge check examples/add/main.fir
 pnpm forge run examples/add/main.fir    # prints 5
 pnpm forge run examples/clamp/main.fir clamp10 15    # prints 10
+pnpm forge run examples/option/main.fir demo         # prints 10
 pnpm forge emit examples/add/main.fir
 pnpm forge check --json examples/add/main.fir
 ```

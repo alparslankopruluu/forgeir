@@ -7,18 +7,14 @@ description: Learn ForgeIR M1 surface syntax and toolchain. Use when writing or 
 
 Read `docs/agent/language.md` (one page). Do not load the full human guide.
 
-M1 can express records, `bool`, `if`/`else`, `match`, field access, constructs, and calls:
+M1 includes records, `bool`, `str`, `list[T]`, `Option[T]`, `Result[T, E]`, `if`/`else`, `match`, and calls.
 
 ```
-module examples.clamp
-
-record Bounds {
-  lo: int
-  hi: int
-}
-
-fn clamp10(x: int) -> int {
-  if x < 0 { 0 } else { if x > 10 { 10 } else { x } }
+fn first_or(xs: list[int], fallback: int) -> int {
+  match xs[0] {
+    Some(v) => v
+    None => fallback
+  }
 }
 ```
 
@@ -29,9 +25,9 @@ pnpm forge check path.fir
 pnpm forge check --json path.fir
 pnpm forge emit path.fir
 pnpm forge run path.fir
-pnpm forge run examples/clamp/main.fir clamp10 15
+pnpm forge run examples/option/main.fir demo
 ```
 
 If `check --json` reports errors, repair the `.fir` source. Do not edit emitted `.ts`.
 
-Out of language: `extern`, lists, Option/Result, effects. Expect `PARSE-001`.
+Out of language: `extern`, effects. Expect `PARSE-001`.

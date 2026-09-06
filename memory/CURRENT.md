@@ -1,23 +1,20 @@
 # CURRENT
 
-Current milestone: M1 (language kernel, partial)
+Current milestone: M1 (language kernel complete)
 
-Current implementation slice: records, bool, comparisons, if/match, field access, construct, calls, TYPE-002 fixes.
+Current implementation slice: list / Option / Result / str builtins.
 
 ## What is working
 
 - M0 int functions (`examples/add`)
-- Records and field access
-- `if` / `else` expressions (else required)
-- `match` on int with required `_` arm
-- `bool` and comparisons
-- Named function calls and record construct
-- TYPE-002 diagnostics include `fixes[]`
-- `examples/clamp` runs `clamp10(15) → 10`
+- Records, `if`/`match`, `bool`, calls (`examples/clamp`)
+- `str`, `list[T]`, `Option[T]`, `Result[T, E]`
+- List literals and `xs[i] -> Option[T]`
+- `Some` / `None` / `Ok` / `Err` constructors and match
+- `examples/option` runs `demo → 10` and `empty → 7`
 
 ## What is incomplete
 
-- lists, Option/Result
 - `forge.lock.json` identity table
 - Semantic patch
 - MCP query/get/patch
@@ -29,33 +26,34 @@ None.
 
 ## Next highest-priority actions
 
-1. M1 remaining: lists + Option/Result builtins
-2. M2: lockfile nids + `forge_query`
-3. Semantic `replace_expr` patch preview
+1. M2: lockfile nids + `forge_query`
+2. Semantic `replace_expr` patch preview
+3. Effects / `extern`
 
 ## Relevant files
 
 - `packages/syntax/src/parser.ts`
 - `packages/sema/src/check.ts`
+- `packages/sema/src/type.ts`
 - `packages/emit-ts/src/emit.ts`
-- `examples/clamp/main.fir`
+- `examples/option/main.fir`
 
 ## Relevant tests
 
-- `tests/parser.test.ts`
+- `tests/option.test.ts`
+- `tests/e2e/option.test.ts`
 - `tests/check.test.ts`
-- `tests/emit.test.ts`
 - `tests/e2e/add.test.ts`
 - `tests/e2e/clamp.test.ts`
 
 ## Last validated state
 
 ```
-Last validated commit: 559c907
+Last validated commit: (update after commit)
 Current milestone: M1
-Completed: records, if/match, bool, calls, clamp example
+Completed: list/Option/Result/str; option example
 In progress: none
 Known issue: TS `number` emit is not i64-accurate (ADR-002)
-Next recommended action: lists and Option/Result
-Validation commands: pnpm test && pnpm typecheck && pnpm forge run examples/clamp/main.fir clamp10 15
+Next recommended action: M2 semantic IDs and query MCP
+Validation commands: pnpm test && pnpm typecheck && pnpm forge run examples/option/main.fir demo
 ```

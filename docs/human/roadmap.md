@@ -8,9 +8,9 @@ Parse, check, emit TypeScript, and run `examples/add`. JSON diagnostics. MCP stu
 
 ## M1 — Language kernel (current)
 
-**Done:** records, `bool`, comparisons, `if`/`else`, `match`, field access, calls, TYPE-002 `fixes[]`.
+**Done:** records, `bool`, `str`, comparisons, `if`/`else`, `match`, field access, calls, `list[T]`, `Option[T]`, `Result[T, E]`, TYPE-002 `fixes[]`.
 
-**Still open:** lists, `Option`/`Result`.
+M1 language kernel is complete. Next milestone is M2 (addressability + MCP).
 
 ## M2 — Addressability + MCP
 

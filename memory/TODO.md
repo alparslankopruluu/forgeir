@@ -2,21 +2,17 @@
 
 ## P0
 
-- (done) Records and field access
-- (done) `if` / `match`
-- (done) Richer diagnostic `fixes[]` on TYPE-002
+- M2: `forge.lock.json` nid assignment
+- M2: MCP `forge_query` / `forge_get`
+- M2: Semantic `replace_expr` patch (preview first)
 
 ## P1
 
-- `list[T]`, `Option[T]`, `Result[T, E]` as builtins
-- `forge.lock.json` nid assignment
-- MCP `forge_query` / `forge_get`
-- Semantic `replace_expr` patch (preview first)
+- Effects (`net`, `fs`, `env`)
+- `extern` npm
 
 ## Later
 
-- `extern` npm
-- Effects (`net`, `fs`, `env`)
 - Benchmark runner (tasks are listed in `benches/tasks.md`)
 - Tree-sitter grammar
 - Second backend
