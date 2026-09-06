@@ -49,7 +49,7 @@ describe("MCP", () => {
     };
     expect(body.ok).toBe(true);
     expect(body.schema).toBe("forge.mcp/v1");
-    expect(body.data.milestone).toBe("M4");
+    expect(body.data.milestone).toBe("M5");
     expect(body.data.name).toBe("ForgeIR");
   });
 

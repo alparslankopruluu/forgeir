@@ -49,6 +49,7 @@ const RESERVED = new Set([
   "else",
   "match",
   "extern",
+  "use",
   "true",
   "false",
   "int",

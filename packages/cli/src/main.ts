@@ -3,7 +3,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { formatReport, report } from "@forgeir/diag";
-import { emitTs } from "@forgeir/emit-ts";
+import { type EmitOptions, emitTs } from "@forgeir/emit-ts";
 import {
   type GetDetail,
   getNode,
@@ -15,6 +15,7 @@ import {
 } from "@forgeir/ir";
 import { runMcpStdio } from "@forgeir/mcp";
 import { previewPatch } from "@forgeir/patch";
+import type { CheckedModule } from "@forgeir/sema";
 import { analyze } from "@forgeir/sema";
 import { parse } from "@forgeir/syntax";
 
@@ -123,7 +124,7 @@ async function main(argv: string[]): Promise<number> {
   if (cmd === "check") {
     const file = requireFile(rest[1]);
     const source = await readFile(file, "utf8");
-    const analyzed = analyze(source, file);
+    const analyzed = analyze(source, file, { root: process.cwd() });
     if (flags.json) {
       process.stdout.write(
         `${JSON.stringify(report(analyzed.diagnostics), null, 2)}\n`,
@@ -144,12 +145,12 @@ async function main(argv: string[]): Promise<number> {
     }
     const file = requireFile(emitArgs[1]);
     const source = await readFile(file, "utf8");
-    const analyzed = analyze(source, file);
+    const analyzed = analyze(source, file, { root: process.cwd() });
     if (!analyzed.module) {
       process.stderr.write(`${formatReport(analyzed.diagnostics)}\n`);
       return 1;
     }
-    const ts = emitTs(analyzed.module);
+    const ts = emitTs(analyzed.module, emitOpts(analyzed.module, true));
     if (out) {
       const dest = resolve(out);
       await mkdir(dirname(dest), { recursive: true });
@@ -171,7 +172,7 @@ async function main(argv: string[]): Promise<number> {
           ? [2, 3]
           : [];
     const source = await readFile(file, "utf8");
-    const analyzed = analyze(source, file);
+    const analyzed = analyze(source, file, { root: process.cwd() });
     if (!analyzed.module) {
       process.stderr.write(`${formatReport(analyzed.diagnostics)}\n`);
       return 1;
@@ -187,11 +188,13 @@ async function main(argv: string[]): Promise<number> {
       );
       return 1;
     }
-    const js = emitTs(analyzed.module, { types: false });
-    const cacheDir = join(process.cwd(), ".forge", "cache");
+    const cacheDir = join(process.cwd(), ".forge", "cache", randomUUID());
     await mkdir(cacheDir, { recursive: true });
-    const tmp = resolve(cacheDir, `run-${randomUUID()}.mjs`);
-    await writeFile(tmp, js, "utf8");
+    for (const unit of analyzed.program) {
+      const js = emitTs(unit, emitOpts(unit, false));
+      await writeFile(join(cacheDir, `${unit.name}.mjs`), js, "utf8");
+    }
+    const tmp = resolve(cacheDir, `${analyzed.module.name}.mjs`);
     const ns = (await import(pathToFileURL(tmp).href)) as Record<
       string,
       (...xs: unknown[]) => unknown
@@ -306,6 +309,30 @@ function requireFile(path: string | undefined): string {
   return resolve(path);
 }
 
+function emitOpts(mod: CheckedModule, types: boolean): EmitOptions {
+  const by = new Map<string, string[]>();
+  const extraAsync: string[] = [];
+  for (const im of mod.imports) {
+    if (im.kind === "record") {
+      continue;
+    }
+    const spec = `./${im.from}.mjs`;
+    const list = by.get(spec) ?? [];
+    if (!list.includes(im.name)) {
+      list.push(im.name);
+    }
+    by.set(spec, list);
+    if (im.effects.includes("net")) {
+      extraAsync.push(im.name);
+    }
+  }
+  return {
+    types,
+    moduleImports: [...by.entries()].map(([spec, names]) => ({ spec, names })),
+    extraAsync,
+  };
+}
+
 function parseRunArg(raw: string): unknown {
   if (/^-?\d+$/.test(raw)) {
     return Number(raw);
@@ -325,7 +352,7 @@ function formatValue(value: unknown): string {
 }
 
 function help(): string {
-  return `ForgeIR M4 compiler
+  return `ForgeIR M5 compiler
 
 Usage:
   forge parse <file>

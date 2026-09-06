@@ -104,4 +104,12 @@ export const oracles: Oracle[] = [
     kind: "check_ok",
     file: "examples/add/main.fir",
   },
+  {
+    id: "T23",
+    kind: "run",
+    file: "examples/calc/main.fir",
+    fn: "twice",
+    args: ["3"],
+    stdout: "6",
+  },
 ];

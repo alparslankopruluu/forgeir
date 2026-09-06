@@ -1,8 +1,15 @@
 import type { Expr, Extern, Fn, Module, TypeRef } from "@forgeir/syntax";
 import { splitExternTarget } from "@forgeir/syntax";
 
+export type ModuleImport = {
+  spec: string;
+  names: string[];
+};
+
 export type EmitOptions = {
   types?: boolean;
+  moduleImports?: ModuleImport[];
+  extraAsync?: string[];
 };
 
 type EmitCtx = {
@@ -17,8 +24,12 @@ export function emitTs(mod: Module, options: EmitOptions = {}): string {
       .filter((fn) => fn.effects.includes("net"))
       .map((fn) => fn.name),
   );
+  for (const name of options.extraAsync ?? []) {
+    asyncNames.add(name);
+  }
   const parts: string[] = [];
   parts.push(...emitImports(mod.externs));
+  parts.push(...emitModuleImports(options.moduleImports ?? []));
 
   if (types) {
     if (moduleUses(mod, "Option")) {
@@ -56,6 +67,16 @@ function emitFn(fn: Fn, types: boolean, asyncNames: Set<string>): string {
   const ret = types ? `: ${inAsync ? `Promise<${innerRet}>` : innerRet}` : "";
   const asyncKw = inAsync ? "async " : "";
   return `export ${asyncKw}function ${fn.name}(${params})${ret} {\n  return ${emitExpr(fn.body, ctx)};\n}`;
+}
+
+function emitModuleImports(imports: ModuleImport[]): string[] {
+  return imports
+    .filter((item) => item.names.length > 0)
+    .sort((a, b) => (a.spec < b.spec ? -1 : a.spec > b.spec ? 1 : 0))
+    .map((item) => {
+      const names = [...item.names].sort();
+      return `import { ${names.join(", ")} } from ${JSON.stringify(item.spec)};`;
+    });
 }
 
 function emitImports(externs: Extern[]): string[] {
