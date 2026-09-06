@@ -1,12 +1,22 @@
-import type { Expr, Extern, Module, TypeRef } from "@forgeir/syntax";
+import type { Expr, Extern, Fn, Module, TypeRef } from "@forgeir/syntax";
 import { splitExternTarget } from "@forgeir/syntax";
 
 export type EmitOptions = {
   types?: boolean;
 };
 
+type EmitCtx = {
+  asyncNames: Set<string>;
+  inAsync: boolean;
+};
+
 export function emitTs(mod: Module, options: EmitOptions = {}): string {
   const types = options.types ?? true;
+  const asyncNames = new Set(
+    [...mod.externs, ...mod.functions]
+      .filter((fn) => fn.effects.includes("net"))
+      .map((fn) => fn.name),
+  );
   const parts: string[] = [];
   parts.push(...emitImports(mod.externs));
 
@@ -30,16 +40,22 @@ export function emitTs(mod: Module, options: EmitOptions = {}): string {
   }
 
   for (const fn of mod.functions) {
-    const params = fn.params
-      .map((p) => (types ? `${p.name}: ${emitTypeRef(p.type)}` : p.name))
-      .join(", ");
-    const ret = types ? `: ${emitTypeRef(fn.returnType)}` : "";
-    parts.push(
-      `export function ${fn.name}(${params})${ret} {\n  return ${emitExpr(fn.body)};\n}`,
-    );
+    parts.push(emitFn(fn, types, asyncNames));
   }
 
   return parts.length === 0 ? "\n" : `${parts.join("\n\n")}\n`;
+}
+
+function emitFn(fn: Fn, types: boolean, asyncNames: Set<string>): string {
+  const inAsync = fn.effects.includes("net");
+  const ctx: EmitCtx = { asyncNames, inAsync };
+  const params = fn.params
+    .map((p) => (types ? `${p.name}: ${emitTypeRef(p.type)}` : p.name))
+    .join(", ");
+  const innerRet = emitTypeRef(fn.returnType);
+  const ret = types ? `: ${inAsync ? `Promise<${innerRet}>` : innerRet}` : "";
+  const asyncKw = inAsync ? "async " : "";
+  return `export ${asyncKw}function ${fn.name}(${params})${ret} {\n  return ${emitExpr(fn.body, ctx)};\n}`;
 }
 
 function emitImports(externs: Extern[]): string[] {
@@ -112,7 +128,7 @@ function emitTypeRef(t: TypeRef): string {
   return t.name;
 }
 
-function emitExpr(expr: Expr): string {
+function emitExpr(expr: Expr, ctx: EmitCtx): string {
   switch (expr.kind) {
     case "int":
       return String(expr.value);
@@ -126,61 +142,84 @@ function emitExpr(expr: Expr): string {
       }
       return expr.name;
     case "list":
-      return `[${expr.elems.map(emitExpr).join(", ")}]`;
+      return `[${expr.elems.map((el) => emitExpr(el, ctx)).join(", ")}]`;
     case "binary":
-      return `(${emitExpr(expr.left)} ${expr.op} ${emitExpr(expr.right)})`;
+      return `(${emitExpr(expr.left, ctx)} ${expr.op} ${emitExpr(expr.right, ctx)})`;
     case "field":
-      return `${emitExpr(expr.object)}.${expr.field}`;
+      return `${emitExpr(expr.object, ctx)}.${expr.field}`;
     case "index":
-      return `(((_o, _i) => (_i >= 0 && _i < _o.length ? { tag: "some", value: _o[_i] } : { tag: "none" }))(${emitExpr(expr.object)}, ${emitExpr(expr.index)}))`;
+      return emitIndex(expr, ctx);
     case "construct": {
       const fields = expr.fields
-        .map((f) => `${f.name}: ${emitExpr(f.value)}`)
+        .map((f) => `${f.name}: ${emitExpr(f.value, ctx)}`)
         .join(", ");
       return `{ ${fields} }`;
     }
     case "call":
-      return emitCall(expr.name, expr.args);
+      return emitCall(expr.name, expr.args, ctx);
     case "if":
-      return `(${emitExpr(expr.cond)} ? ${emitExpr(expr.thenBody)} : ${emitExpr(expr.elseBody)})`;
+      return `(${emitExpr(expr.cond, ctx)} ? ${emitExpr(expr.thenBody, ctx)} : ${emitExpr(expr.elseBody, ctx)})`;
     case "match":
-      return emitMatch(expr);
+      return emitMatch(expr, ctx);
   }
 }
 
-function emitCall(name: string, args: Expr[]): string {
+function emitIndex(
+  expr: Extract<Expr, { kind: "index" }>,
+  ctx: EmitCtx,
+): string {
+  const body =
+    '((_o, _i) => (_i >= 0 && _i < _o.length ? { tag: "some", value: _o[_i] } : { tag: "none" }))';
+  const call = `(${body}(${emitExpr(expr.object, ctx)}, ${emitExpr(expr.index, ctx)}))`;
+  if (!ctx.inAsync) {
+    return call;
+  }
+  return `(await (async (_o, _i) => (_i >= 0 && _i < _o.length ? { tag: "some", value: _o[_i] } : { tag: "none" }))(${emitExpr(expr.object, ctx)}, ${emitExpr(expr.index, ctx)}))`;
+}
+
+function emitCall(name: string, args: Expr[], ctx: EmitCtx): string {
   if (name === "Some" && args[0]) {
-    return `{ tag: "some", value: ${emitExpr(args[0])} }`;
+    return `{ tag: "some", value: ${emitExpr(args[0], ctx)} }`;
   }
   if (name === "Ok" && args[0]) {
-    return `{ tag: "ok", value: ${emitExpr(args[0])} }`;
+    return `{ tag: "ok", value: ${emitExpr(args[0], ctx)} }`;
   }
   if (name === "Err" && args[0]) {
-    return `{ tag: "err", value: ${emitExpr(args[0])} }`;
+    return `{ tag: "err", value: ${emitExpr(args[0], ctx)} }`;
   }
-  return `${name}(${args.map(emitExpr).join(", ")})`;
+  const call = `${name}(${args.map((arg) => emitExpr(arg, ctx)).join(", ")})`;
+  if (ctx.asyncNames.has(name)) {
+    return `await ${call}`;
+  }
+  return call;
 }
 
-function emitMatch(expr: Extract<Expr, { kind: "match" }>): string {
+function emitMatch(
+  expr: Extract<Expr, { kind: "match" }>,
+  ctx: EmitCtx,
+): string {
   const variant = expr.arms.some((arm) => arm.pattern.kind === "variant");
   if (!variant) {
     const arms = expr.arms.map((arm) => {
       if (arm.pattern.kind === "wildcard") {
-        return `default: return ${emitExpr(arm.body)};`;
+        return `default: return ${emitExpr(arm.body, ctx)};`;
       }
       if (arm.pattern.kind === "int") {
-        return `case ${arm.pattern.value}: return ${emitExpr(arm.body)};`;
+        return `case ${arm.pattern.value}: return ${emitExpr(arm.body, ctx)};`;
       }
-      return `default: return ${emitExpr(arm.body)};`;
+      return `default: return ${emitExpr(arm.body, ctx)};`;
     });
-    return `(((_m) => { switch (_m) { ${arms.join(" ")} } })(${emitExpr(expr.scrutinee)}))`;
+    const iife = ctx.inAsync
+      ? `(await (async (_m) => { switch (_m) { ${arms.join(" ")} } })(${emitExpr(expr.scrutinee, ctx)}))`
+      : `(((_m) => { switch (_m) { ${arms.join(" ")} } })(${emitExpr(expr.scrutinee, ctx)}))`;
+    return iife;
   }
   const arms = expr.arms.map((arm) => {
     if (arm.pattern.kind === "wildcard") {
-      return `return ${emitExpr(arm.body)};`;
+      return `return ${emitExpr(arm.body, ctx)};`;
     }
     if (arm.pattern.kind !== "variant") {
-      return `return ${emitExpr(arm.body)};`;
+      return `return ${emitExpr(arm.body, ctx)};`;
     }
     const tag =
       arm.pattern.name === "Some"
@@ -193,7 +232,10 @@ function emitMatch(expr: Extract<Expr, { kind: "match" }>): string {
     const bind = arm.pattern.bind
       ? ` const ${arm.pattern.bind} = _m.value;`
       : "";
-    return `if (_m.tag === "${tag}") {${bind} return ${emitExpr(arm.body)}; }`;
+    return `if (_m.tag === "${tag}") {${bind} return ${emitExpr(arm.body, ctx)}; }`;
   });
-  return `(((_m) => { ${arms.join(" ")} })(${emitExpr(expr.scrutinee)}))`;
+  if (ctx.inAsync) {
+    return `(await (async (_m) => { ${arms.join(" ")} })(${emitExpr(expr.scrutinee, ctx)}))`;
+  }
+  return `(((_m) => { ${arms.join(" ")} })(${emitExpr(expr.scrutinee, ctx)}))`;
 }
