@@ -200,7 +200,7 @@ export async function handleMcpRequest(
                   "oracles",
                   "rename",
                 ],
-                experimental: ["patch-apply"],
+                experimental: ["patch-apply", "llm-harness"],
               }),
             ),
           };

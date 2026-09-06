@@ -14,7 +14,8 @@
     "format": "biome check --write .",
     "format:check": "biome check .",
     "forge": "tsx packages/cli/src/main.ts",
-    "bench": "tsx benches/harness.ts"
+    "bench": "tsx benches/harness.ts",
+    "bench:llm": "tsx benches/llm/harness.ts"
   },
   "dependencies": {
     "@forgeir/http": "workspace:*"
