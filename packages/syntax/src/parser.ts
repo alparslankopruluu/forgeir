@@ -124,6 +124,7 @@ class Parser {
     return {
       kind: "record",
       name: nameTok.value,
+      nameSpan: nameTok.span,
       fields,
       span: { file: this.file, start, end: endTok.span.end },
     };
@@ -143,6 +144,7 @@ class Parser {
     return {
       kind: "fn",
       name: nameTok.value,
+      nameSpan: nameTok.span,
       params,
       returnType,
       effects,
@@ -167,6 +169,7 @@ class Parser {
     return {
       kind: "extern",
       name: nameTok.value,
+      nameSpan: nameTok.span,
       params,
       returnType,
       effects,

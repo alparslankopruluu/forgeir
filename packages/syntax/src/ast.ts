@@ -33,6 +33,7 @@ export type Field = {
 export type RecordDecl = {
   kind: "record";
   name: string;
+  nameSpan: Span;
   fields: Field[];
   span: Span;
 };
@@ -76,6 +77,7 @@ export type Expr =
 export type Fn = {
   kind: "fn";
   name: string;
+  nameSpan: Span;
   params: Param[];
   returnType: TypeRef;
   effects: string[];
@@ -86,6 +88,7 @@ export type Fn = {
 export type Extern = {
   kind: "extern";
   name: string;
+  nameSpan: Span;
   params: Param[];
   returnType: TypeRef;
   effects: string[];
