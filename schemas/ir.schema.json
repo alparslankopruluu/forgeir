@@ -1,27 +1,22 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://forgeir.dev/schemas/ir.schema.json",
-  "title": "forge.ir/v1",
-  "description": "Minimal Semantic Program Graph node. M0 does not persist SPG yet; this schema is the target shape.",
+  "title": "forge.ir/v1 compact node",
+  "description": "Compact Semantic Program Graph node returned by forge query / forge_get. Source is omitted unless detail=body.",
   "type": "object",
   "required": ["nid", "kind", "qid", "hid"],
   "properties": {
     "nid": { "type": "string", "pattern": "^nid_" },
-    "kind": { "enum": ["module", "fn", "param", "int", "name", "binary"] },
+    "kind": {
+      "enum": ["module", "record", "field", "fn", "param", "expr"]
+    },
     "qid": { "type": "string" },
     "hid": { "type": "string", "pattern": "^hid_" },
-    "span": {
-      "type": "object",
-      "required": ["file", "start", "end"],
-      "properties": {
-        "file": { "type": "string" },
-        "start": { "type": "integer" },
-        "end": { "type": "integer" }
-      }
-    },
-    "kids": {
+    "exprKind": { "type": "string" },
+    "snippet": { "type": "string" },
+    "children": {
       "type": "array",
-      "items": { "type": "string" }
+      "items": { "$ref": "#" }
     }
   }
 }

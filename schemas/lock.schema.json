@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forgeir.dev/schemas/lock.schema.json",
+  "title": "forge.lock/v1",
+  "type": "object",
+  "required": ["schema", "ids"],
+  "properties": {
+    "schema": { "const": "forge.lock/v1" },
+    "ids": {
+      "type": "object",
+      "additionalProperties": { "type": "string", "pattern": "^nid_" }
+    }
+  }
+}
