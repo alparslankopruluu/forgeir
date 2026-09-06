@@ -1,25 +1,27 @@
 # CURRENT
 
-Current milestone: M2 (addressability + MCP)
+Current milestone: M3 (interop + effects)
 
-Current implementation slice: lockfile nids, query/get, `replace_expr` preview.
+Current implementation slice: `extern` npm facades and `! { net|fs|env }`.
 
 ## What is working
 
 - M0 int functions (`examples/add`)
 - Records, `if`/`match`, `bool`, calls (`examples/clamp`)
 - `str`, `list[T]`, `Option[T]`, `Result[T, E]` (`examples/option`)
-- `forge.lock.json` symbol nid table (`forge.lock/v1`)
-- `forge query` / `forge get` (and MCP `forge_query` / `forge_get`)
-- `replace_expr` preview; `--apply` / MCP `mode: apply` writes if not `PATCH-001`
+- `forge.lock.json` symbol nid table; query/get; `replace_expr`
+- `extern fn ... = "module.export"` (`examples/wrap` → `node:path.basename`)
+- Effects `net`/`fs`/`env`; omit = pure; `EFFECT-001`/`EFFECT-002`
+- `forge run --allow env` (`examples/env` → `node:os.homedir`)
 - MCP tools (5): `forge_status`, `forge_validate`, `forge_query`, `forge_get`, `forge_patch`
 
 ## What is incomplete
 
-- Effects / `extern`
-- Rename-preserving nids (new qid → new nid; old lock entries remain)
+- LLM benchmark harness / published scores
+- `forge.http` adapter
+- `use` / multi-file modules
+- Rename-preserving nids
 - Patch ops other than `replace_expr`
-- Benchmark harness execution (task list only)
 
 ## Current blockers
 
@@ -27,34 +29,33 @@ None.
 
 ## Next highest-priority actions
 
-1. M3: effects (`net`, `fs`, `env`)
-2. M3: `extern` npm
+1. M4: benchmark harness (no scores until N ≥ 3)
+2. `forge.http` over `fetch`
 3. Rename-preserving nids / extra patch ops
 
 ## Relevant files
 
-- `packages/ir/src/lock.ts`
-- `packages/ir/src/graph.ts`
-- `packages/patch/src/index.ts`
+- `packages/syntax/src/parser.ts`
+- `packages/sema/src/check.ts`
+- `packages/emit-ts/src/emit.ts`
 - `packages/cli/src/main.ts`
-- `packages/mcp/src/index.ts`
-- `forge.lock.json`
+- `examples/wrap/main.fir`
+- `examples/env/main.fir`
 
 ## Relevant tests
 
-- `tests/ir.test.ts`
-- `tests/patch.test.ts`
-- `tests/mcp.test.ts`
-- `tests/e2e/patch.test.ts`
+- `tests/extern.test.ts`
+- `tests/e2e/extern.test.ts`
+- `tests/check.test.ts`
 
 ## Last validated state
 
 ```
-Last validated commit: 92eae54
-Current milestone: M2
-Completed: lockfile nids; query/get; replace_expr preview/apply
+Last validated commit: 82dfd22
+Current milestone: M3
+Completed: extern npm facades; effect checker; forge run --allow
 In progress: none
 Known issue: TS `number` emit is not i64-accurate (ADR-002); rename allocates a new nid
-Next recommended action: M3 effects and extern
-Validation commands: pnpm test && pnpm typecheck && pnpm forge lock examples/add/main.fir && pnpm forge get examples/add/main.fir examples.add.add@body --detail body
+Next recommended action: M4 harness / forge.http
+Validation commands: pnpm test && pnpm typecheck && pnpm forge run examples/wrap/main.fir demo && pnpm forge run examples/env/main.fir demo --allow env
 ```

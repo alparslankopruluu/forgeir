@@ -1,13 +1,15 @@
-# ForgeIR language kernel (M1)
+# ForgeIR language kernel (M1 + M3 interop)
 
 Edition: 2026 (hardcoded). File extension: `.fir`. One module per file.
 
 ```
 Module  := "module" Qid Decl*
-Decl    := Record | Fn
+Decl    := Record | Fn | Extern
 Record  := "record" ident "{" Field* "}"
 Field   := ident ":" Type
-Fn      := "fn" ident "(" Params? ")" "->" Type "{" Expr "}"
+Fn      := "fn" ident "(" Params? ")" "->" Type Effects? "{" Expr "}"
+Extern  := "extern" "fn" ident "(" Params? ")" "->" Type Effects? "=" string
+Effects := "!" "{" ident* "}"
 Type    := "int" | "bool" | "str" | ident | "list" "[" Type "]"
          | "Option" "[" Type "]" | "Result" "[" Type "," Type "]"
 If      := "if" Expr "{" Expr "}" "else" "{" Expr "}"
@@ -23,17 +25,19 @@ Pattern := int | "_" | "None" | "Some" "(" ident ")" | "Ok" "(" ident ")" | "Err
 - List literal `[1, 2]`. Index `xs[i]` has type `Option[T]`.
 - `Some(x)`, `None`, `Ok(x)`, `Err(e)` are builtin constructors.
 - `[]` and `None` need an expected type (parameter, return, or argument).
-- Unknown syntax is `PARSE-001`. Do not invent `extern` yet.
+- Effects are a closed set: `net`, `fs`, `env`. Omit `! { ... }` for pure. Callee effects must be a subset of the caller’s.
+- `extern` target is `"module.export"` (last `.` splits). Emits `import { export } from "module"`. No `.d.ts` import.
+- `forge run` of an effectful entry function needs `--allow <effect>` for each required effect.
+- Unknown syntax is `PARSE-001`. Do not invent `use`, `loop`, or `let` yet.
 
 Example:
 
 ```
-module examples.option
+module examples.wrap
 
-fn first_or(xs: list[int], fallback: int) -> int {
-  match xs[0] {
-    Some(v) => v
-    None => fallback
-  }
+extern fn basename(p: str) -> str = "node:path.basename"
+
+fn demo() -> str {
+  basename("/tmp/main.fir")
 }
 ```

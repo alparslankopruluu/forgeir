@@ -10,27 +10,29 @@ This thesis is **unproven**. There are no published token-savings figures in thi
 
 ## Current status
 
-**Milestone M2 — addressability + MCP.** Experimental.
+**Milestone M3 — interop + effects.** Experimental.
 
 ### Implemented
 
 - Surface: `module`, `record`, `fn`, `int`, `bool`, `str`, `list[T]`, `Option[T]`, `Result[T, E]`, arithmetic, comparisons, `if`/`else`, `match`, field access, construct, calls
-- Parse, typecheck, JSON diagnostics (`PARSE-001` … `TYPE-004`, `PATCH-001`) including TYPE-002 repair `fixes[]`
+- Parse, typecheck, JSON diagnostics (`PARSE-001` … `TYPE-004`, `EFFECT-001`, `EFFECT-002`, `EXTERN-001`, `PATCH-001`) including TYPE-002 / EFFECT-001 repair `fixes[]`
 - Deterministic TypeScript ESM emit
 - CLI: `forge parse | check | emit | run | lock | query | get | patch | mcp`
 - `forge.lock.json` symbol nid table (`forge.lock/v1`)
 - Semantic `replace_expr` (preview default; `--apply` opt-in)
-- Examples: `examples/add`, `examples/clamp`, `examples/option`
+- `extern fn ... = "module.export"` → ESM `import`; typed facade only (no `.d.ts` import)
+- Explicit effects `! { net }`, `! { fs }`, `! { env }` (omit = pure); `forge run --allow`
+- Examples: `examples/add`, `examples/clamp`, `examples/option`, `examples/wrap`, `examples/env`
 - MCP (5 tools): `forge_status`, `forge_validate`, `forge_query`, `forge_get`, `forge_patch`
 - Agent docs, Memory Bank, ADRs
 
 ### Not implemented (do not treat as shipped)
 
-- Effects, `extern`, package registry
+- Package registry, `use`/multi-file modules
 - Rename-preserving nids (a new qid gets a new nid; old lock entries remain)
 - Patch ops other than `replace_expr`
 - LLVM, WASM, JVM, Swift, Kotlin backends
-- Benchmark harness results
+- Benchmark harness results (no scores until a tagged `bench-vX` with N ≥ 3)
 
 Related systems such as TML are native LLVM languages with compiler-shaped MCP wrappers. ForgeIR’s bet is a **semantic IR and agent protocol** that compiles *to* existing ecosystems, not a batteries-included native stdlib.
 
@@ -45,6 +47,8 @@ pnpm forge check examples/add/main.fir
 pnpm forge run examples/add/main.fir    # prints 5
 pnpm forge run examples/clamp/main.fir clamp10 15    # prints 10
 pnpm forge run examples/option/main.fir demo         # prints 10
+pnpm forge run examples/wrap/main.fir demo           # prints main.fir
+pnpm forge run examples/env/main.fir demo --allow env
 pnpm forge emit examples/add/main.fir
 pnpm forge check --json examples/add/main.fir
 pnpm forge lock examples/add/main.fir

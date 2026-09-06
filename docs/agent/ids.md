@@ -2,7 +2,7 @@
 
 Three identifiers (ADR-003):
 
-- `qid` — qualified name. Changes if the name changes. Examples: `examples.add`, `examples.add.add`, `examples.add.add/param/a`, `examples.add.add@body`, `examples.add.add@body.left`.
+- `qid` — qualified name. Changes if the name changes. Examples: `examples.add`, `examples.add.add`, `examples.add.add/param/a`, `examples.add.add@body`, `examples.wrap.basename` (extern).
 - `nid` — stable id (`nid_` + hex). **Symbol** nids (module, record, field, fn, param) are stored in `forge.lock.json`. **Expr** nids are derived from the expr qid and are not stored.
 - `hid` — `hid_` + hex of the source slice for that node.
 

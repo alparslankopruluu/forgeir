@@ -2,8 +2,8 @@
 
 Report vulnerabilities privately via GitHub Security Advisories on this repository.
 
-M0 has no network, shell, or package-install effects in the compiler. `forge run` executes emitted JavaScript in the local Node process; treat untrusted `.fir` like untrusted source.
+The compiler itself does not fetch packages or open a shell. `forge run` executes emitted JavaScript in the local Node process, including `extern` imports. Effectful entry functions require `--allow net|fs|env`. Treat untrusted `.fir` like untrusted source.
 
-MCP `forge_patch` apply is not implemented. Destructive tools must default to preview when they exist.
+MCP `forge_patch` defaults to preview. `--apply` / `mode: apply` writes `.fir` source. Destructive tools must default to preview.
 
 Do not open issues that include secrets or production credentials.
