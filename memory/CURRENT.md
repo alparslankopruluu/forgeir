@@ -49,7 +49,7 @@ None.
 ## Last validated state
 
 ```
-Last validated commit: (update after commit)
+Last validated commit: b4cd12d
 Current milestone: M1
 Completed: list/Option/Result/str; option example
 In progress: none
