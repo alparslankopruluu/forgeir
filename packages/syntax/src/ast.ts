@@ -96,9 +96,17 @@ export type Extern = {
   span: Span;
 };
 
+export type Use = {
+  kind: "use";
+  module: string;
+  names: string[];
+  span: Span;
+};
+
 export type Module = {
   kind: "module";
   name: string;
+  uses: Use[];
   records: RecordDecl[];
   functions: Fn[];
   externs: Extern[];

@@ -13,6 +13,7 @@ import type {
   Pattern,
   RecordDecl,
   TypeRef,
+  Use,
 } from "./ast.ts";
 import { lex, type Token, type TokenKind } from "./lexer.ts";
 
@@ -64,10 +65,15 @@ class Parser {
     const start = this.peek().span.start;
     this.expect("module");
     const name = this.parseQid();
+    const uses: Use[] = [];
     const records: RecordDecl[] = [];
     const functions: Fn[] = [];
     const externs: Extern[] = [];
     while (this.peek().kind !== "eof") {
+      if (this.peek().kind === "use") {
+        uses.push(this.parseUse());
+        continue;
+      }
       if (this.peek().kind === "record") {
         records.push(this.parseRecord());
         continue;
@@ -82,7 +88,7 @@ class Parser {
       }
       this.fail(
         Codes.PARSE_UNEXPECTED,
-        `expected record, fn, or extern, found ${this.peek().kind}${this.peek().value ? ` '${this.peek().value}'` : ""}`,
+        `expected use, record, fn, or extern, found ${this.peek().kind}${this.peek().value ? ` '${this.peek().value}'` : ""}`,
         this.peek().span,
       );
     }
@@ -90,10 +96,33 @@ class Parser {
     return {
       kind: "module",
       name,
+      uses,
       records,
       functions,
       externs,
       span: { file: this.file, start, end },
+    };
+  }
+
+  private parseUse(): Use {
+    const start = this.peek().span.start;
+    this.expect("use");
+    const module = this.parseQid();
+    this.expect("dot");
+    this.expect("lbrace");
+    const names: string[] = [];
+    while (this.peek().kind !== "rbrace" && this.peek().kind !== "eof") {
+      names.push(this.expect("ident").value);
+      if (this.peek().kind === "comma") {
+        this.advance();
+      }
+    }
+    const endTok = this.expect("rbrace");
+    return {
+      kind: "use",
+      module,
+      names,
+      span: { file: this.file, start, end: endTok.span.end },
     };
   }
 
@@ -243,7 +272,7 @@ class Parser {
   private parseQid(): string {
     const first = this.expect("ident");
     const parts = [first.value];
-    while (this.peek().kind === "dot") {
+    while (this.peek().kind === "dot" && this.peekAt(1).kind === "ident") {
       this.advance();
       parts.push(this.expect("ident").value);
     }

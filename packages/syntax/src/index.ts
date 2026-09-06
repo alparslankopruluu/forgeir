@@ -11,6 +11,7 @@ export type {
   Pattern,
   RecordDecl,
   TypeRef,
+  Use,
 } from "./ast.ts";
 export { splitExternTarget } from "./ast.ts";
 export type { LexResult, Token, TokenKind } from "./lexer.ts";

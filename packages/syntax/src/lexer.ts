@@ -9,6 +9,7 @@ export type TokenKind =
   | "else"
   | "match"
   | "extern"
+  | "use"
   | "true"
   | "false"
   | "ident"
@@ -58,6 +59,7 @@ const KEYWORDS: Record<string, TokenKind> = {
   else: "else",
   match: "match",
   extern: "extern",
+  use: "use",
   true: "true",
   false: "false",
 };
