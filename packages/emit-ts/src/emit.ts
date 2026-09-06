@@ -1,4 +1,5 @@
-import type { Expr, Module, TypeRef } from "@forgeir/syntax";
+import type { Expr, Extern, Module, TypeRef } from "@forgeir/syntax";
+import { splitExternTarget } from "@forgeir/syntax";
 
 export type EmitOptions = {
   types?: boolean;
@@ -7,6 +8,7 @@ export type EmitOptions = {
 export function emitTs(mod: Module, options: EmitOptions = {}): string {
   const types = options.types ?? true;
   const parts: string[] = [];
+  parts.push(...emitImports(mod.externs));
 
   if (types) {
     if (moduleUses(mod, "Option")) {
@@ -40,6 +42,36 @@ export function emitTs(mod: Module, options: EmitOptions = {}): string {
   return parts.length === 0 ? "\n" : `${parts.join("\n\n")}\n`;
 }
 
+function emitImports(externs: Extern[]): string[] {
+  const bySpec = new Map<string, { exportName: string; local: string }[]>();
+  for (const ext of externs) {
+    const split = splitExternTarget(ext.target);
+    if (!split) {
+      continue;
+    }
+    const list = bySpec.get(split.spec) ?? [];
+    if (!list.some((b) => b.local === ext.name)) {
+      list.push({ exportName: split.exportName, local: ext.name });
+    }
+    bySpec.set(split.spec, list);
+  }
+  return [...bySpec.keys()].sort().map((spec) => {
+    const names = (bySpec.get(spec) ?? []).slice().sort((a, b) => {
+      if (a.local < b.local) {
+        return -1;
+      }
+      if (a.local > b.local) {
+        return 1;
+      }
+      return 0;
+    });
+    const bindings = names.map((n) =>
+      n.exportName === n.local ? n.local : `${n.exportName} as ${n.local}`,
+    );
+    return `import { ${bindings.join(", ")} } from ${JSON.stringify(spec)};`;
+  });
+}
+
 function moduleUses(mod: Module, name: string): boolean {
   const inType = (t: TypeRef): boolean =>
     t.name === name || t.args.some((a) => inType(a));
@@ -48,7 +80,8 @@ function moduleUses(mod: Module, name: string): boolean {
       return true;
     }
   }
-  return mod.functions.some(
+  const fns = [...mod.functions, ...mod.externs];
+  return fns.some(
     (fn) => inType(fn.returnType) || fn.params.some((p) => inType(p.type)),
   );
 }
