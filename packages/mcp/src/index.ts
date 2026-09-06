@@ -7,7 +7,9 @@ import {
   getNode,
   indexModule,
   loadLock,
+  lockIdsEqual,
   queryGraph,
+  saveLock,
 } from "@forgeir/ir";
 import { type PatchOp, previewPatch } from "@forgeir/patch";
 import { analyze } from "@forgeir/sema";
@@ -85,7 +87,7 @@ const TOOLS = [
   {
     name: "forge_patch",
     description:
-      "Semantic replace_expr. Default mode is preview. apply writes the file.",
+      "Semantic replace_expr or rename. Default mode is preview. apply writes the file and retargets lockfile nids on rename.",
     inputSchema: {
       type: "object",
       properties: {
@@ -94,6 +96,7 @@ const TOOLS = [
         qid: { type: "string" },
         nid: { type: "string" },
         expr: { type: "string" },
+        name: { type: "string" },
         ops: { type: "array" },
       },
       required: ["path"],
@@ -195,6 +198,7 @@ export async function handleMcpRequest(
                   "effects",
                   "forge.http",
                   "oracles",
+                  "rename",
                 ],
                 experimental: ["patch-apply"],
               }),
@@ -281,14 +285,23 @@ export async function handleMcpRequest(
           const ops = (
             Array.isArray(args.ops)
               ? args.ops
-              : [
-                  {
-                    op: "replace_expr",
-                    qid: args.qid ? String(args.qid) : undefined,
-                    nid: args.nid ? String(args.nid) : undefined,
-                    expr: String(args.expr ?? ""),
-                  },
-                ]
+              : args.name && args.expr === undefined
+                ? [
+                    {
+                      op: "rename" as const,
+                      qid: args.qid ? String(args.qid) : undefined,
+                      nid: args.nid ? String(args.nid) : undefined,
+                      name: String(args.name),
+                    },
+                  ]
+                : [
+                    {
+                      op: "replace_expr" as const,
+                      qid: args.qid ? String(args.qid) : undefined,
+                      nid: args.nid ? String(args.nid) : undefined,
+                      expr: String(args.expr ?? ""),
+                    },
+                  ]
           ) as PatchOp[];
           const preview = previewPatch(loaded.source, path, loaded.lock, {
             schema: "forge.patch/v1",
@@ -304,6 +317,10 @@ export async function handleMcpRequest(
               await writeFile(path, preview.source, "utf8");
               preview.wrote = true;
               preview.mode = "apply";
+              const lockPath = join(process.cwd(), "forge.lock.json");
+              if (!lockIdsEqual(loaded.lock, preview.lock)) {
+                saveLock(lockPath, preview.lock);
+              }
             }
           }
           return {

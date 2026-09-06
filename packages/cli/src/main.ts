@@ -9,6 +9,7 @@ import {
   getNode,
   indexModule,
   loadLock,
+  lockIdsEqual,
   queryGraph,
   saveLock,
 } from "@forgeir/ir";
@@ -24,6 +25,7 @@ type Flags = {
   detail: GetDetail;
   qid?: string;
   expr?: string;
+  rename?: string;
   limit: number;
   allow: string[];
 };
@@ -67,6 +69,12 @@ function parseArgv(argv: string[]): { flags: Flags; rest: string[] } {
       i += 1;
       if (value !== undefined) {
         flags.expr = value;
+      }
+    } else if (arg === "--rename") {
+      const value = argv[i + 1];
+      i += 1;
+      if (value !== undefined) {
+        flags.rename = value;
       }
     } else if (arg === "--limit") {
       flags.limit = Number(argv[i + 1] ?? 20);
@@ -243,12 +251,20 @@ async function main(argv: string[]): Promise<number> {
 
     const qid = flags.qid ?? rest[2];
     const expr = flags.expr ?? rest[3];
-    if (!qid || expr === undefined) {
-      throw new UsageError("patch needs --qid and --expr");
+    if (!qid) {
+      throw new UsageError("patch needs --qid");
+    }
+    if (flags.rename && expr !== undefined) {
+      throw new UsageError("patch --rename cannot be combined with --expr");
+    }
+    if (!flags.rename && expr === undefined) {
+      throw new UsageError("patch needs --expr or --rename");
     }
     const preview = previewPatch(source, file, lock, {
       schema: "forge.patch/v1",
-      ops: [{ op: "replace_expr", qid, expr }],
+      ops: flags.rename
+        ? [{ op: "rename", qid, name: flags.rename }]
+        : [{ op: "replace_expr", qid, expr: expr ?? "" }],
     });
     if (
       flags.apply &&
@@ -259,6 +275,9 @@ async function main(argv: string[]): Promise<number> {
         await writeFile(file, preview.source, "utf8");
         preview.wrote = true;
         preview.mode = "apply";
+        if (!lockIdsEqual(lock, preview.lock)) {
+          saveLock(lockPath, preview.lock);
+        }
       }
     }
     process.stdout.write(
@@ -317,6 +336,7 @@ Usage:
   forge query <file> [selector] [--kind symbol|expr|all]
   forge get <file> <selector> [--detail compact|sig|body]
   forge patch <file> --qid <qid> --expr <source> [--apply]
+  forge patch <file> --qid <qid> --rename <name> [--apply]
   forge mcp
 `;
 }

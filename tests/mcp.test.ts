@@ -83,4 +83,19 @@ describe("MCP", () => {
     expect(body.data.wrote).toBe(false);
     expect(body.data.hunks.join("")).toContain("a - b");
   });
+
+  it("previews a symbol rename", async () => {
+    const result = await call("forge_patch", {
+      path: addPath,
+      qid: "examples.add.add",
+      name: "sum",
+    });
+    const content = (result.result as { content: { text: string }[] }).content;
+    const body = JSON.parse(content[0]?.text ?? "{}") as {
+      data: { ok: boolean; wrote: boolean; hunks: string[] };
+    };
+    expect(body.data.ok).toBe(true);
+    expect(body.data.wrote).toBe(false);
+    expect(body.data.hunks.join("")).toContain("+sum");
+  });
 });
