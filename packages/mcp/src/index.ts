@@ -174,7 +174,7 @@ export async function handleMcpRequest(
             result: textResult(
               envelope({
                 name: "ForgeIR",
-                milestone: "M3",
+                milestone: "M4",
                 version: "0.0.0",
                 implemented: [
                   "parse",
@@ -193,6 +193,8 @@ export async function handleMcpRequest(
                   "patch-preview",
                   "extern",
                   "effects",
+                  "forge.http",
+                  "oracles",
                 ],
                 experimental: ["patch-apply"],
               }),

@@ -1,6 +1,5 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { formatReport, report } from "@forgeir/diag";
@@ -158,7 +157,11 @@ async function main(argv: string[]): Promise<number> {
     const fnName = rest[2] ?? "add";
     const extra = rest.slice(3);
     const fnArgs =
-      extra.length > 0 ? extra.map(Number) : fnName === "add" ? [2, 3] : [];
+      extra.length > 0
+        ? extra.map(parseRunArg)
+        : fnName === "add"
+          ? [2, 3]
+          : [];
     const source = await readFile(file, "utf8");
     const analyzed = analyze(source, file);
     if (!analyzed.module) {
@@ -177,7 +180,9 @@ async function main(argv: string[]): Promise<number> {
       return 1;
     }
     const js = emitTs(analyzed.module, { types: false });
-    const tmp = resolve(tmpdir(), `forgeir-run-${randomUUID()}.mjs`);
+    const cacheDir = join(process.cwd(), ".forge", "cache");
+    await mkdir(cacheDir, { recursive: true });
+    const tmp = resolve(cacheDir, `run-${randomUUID()}.mjs`);
     await writeFile(tmp, js, "utf8");
     const ns = (await import(pathToFileURL(tmp).href)) as Record<
       string,
@@ -188,7 +193,7 @@ async function main(argv: string[]): Promise<number> {
       process.stderr.write(`error: no exported function ${fnName}\n`);
       return 1;
     }
-    process.stdout.write(`${String(fn(...fnArgs))}\n`);
+    process.stdout.write(`${formatValue(await fn(...fnArgs))}\n`);
     return 0;
   }
 
@@ -282,8 +287,26 @@ function requireFile(path: string | undefined): string {
   return resolve(path);
 }
 
+function parseRunArg(raw: string): unknown {
+  if (/^-?\d+$/.test(raw)) {
+    return Number(raw);
+  }
+  return raw;
+}
+
+function formatValue(value: unknown): string {
+  if (
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  ) {
+    return String(value);
+  }
+  return JSON.stringify(value);
+}
+
 function help(): string {
-  return `ForgeIR M3 compiler
+  return `ForgeIR M4 compiler
 
 Usage:
   forge parse <file>
