@@ -10,22 +10,25 @@ This thesis is **unproven**. There are no published token-savings figures in thi
 
 ## Current status
 
-**Milestone M1 — language kernel.** Experimental.
+**Milestone M2 — addressability + MCP.** Experimental.
 
 ### Implemented
 
 - Surface: `module`, `record`, `fn`, `int`, `bool`, `str`, `list[T]`, `Option[T]`, `Result[T, E]`, arithmetic, comparisons, `if`/`else`, `match`, field access, construct, calls
-- Parse, typecheck, JSON diagnostics (`PARSE-001` … `TYPE-004`) including TYPE-002 repair `fixes[]`
+- Parse, typecheck, JSON diagnostics (`PARSE-001` … `TYPE-004`, `PATCH-001`) including TYPE-002 repair `fixes[]`
 - Deterministic TypeScript ESM emit
-- CLI: `forge parse | check | emit | run`
+- CLI: `forge parse | check | emit | run | lock | query | get | patch | mcp`
+- `forge.lock.json` symbol nid table (`forge.lock/v1`)
+- Semantic `replace_expr` (preview default; `--apply` opt-in)
 - Examples: `examples/add`, `examples/clamp`, `examples/option`
-- MCP stub: `forge_status`, `forge_validate`
+- MCP (5 tools): `forge_status`, `forge_validate`, `forge_query`, `forge_get`, `forge_patch`
 - Agent docs, Memory Bank, ADRs
 
 ### Not implemented (do not treat as shipped)
 
 - Effects, `extern`, package registry
-- Semantic patch, lockfile nids, query MCP tools
+- Rename-preserving nids (a new qid gets a new nid; old lock entries remain)
+- Patch ops other than `replace_expr`
 - LLVM, WASM, JVM, Swift, Kotlin backends
 - Benchmark harness results
 
@@ -44,6 +47,10 @@ pnpm forge run examples/clamp/main.fir clamp10 15    # prints 10
 pnpm forge run examples/option/main.fir demo         # prints 10
 pnpm forge emit examples/add/main.fir
 pnpm forge check --json examples/add/main.fir
+pnpm forge lock examples/add/main.fir
+pnpm forge query examples/add/main.fir examples.add
+pnpm forge get examples/add/main.fir examples.add.add@body --detail body
+pnpm forge patch examples/add/main.fir --qid examples.add.add@body --expr 'a - b'
 ```
 
 Example program (`examples/add/main.fir`):
@@ -61,17 +68,18 @@ Emitted TypeScript is an **artifact**. The `.fir` file is canonical.
 ## Architecture
 
 ```
-.fir  →  parse  →  check  →  Semantic Program Graph (M2)
+.fir  →  parse  →  check  →  Semantic Program Graph
+                              ├─ forge.lock.json (symbol nids)
                               ├─ diagnostics (JSON)
-                              ├─ MCP / CLI
+                              ├─ MCP / CLI (query, get, patch)
                               └─ emit-ts  →  .ts artifact
 ```
 
-IDs (see [ADR-003](docs/adr/0003-canonical-store-and-ids.md)):
+IDs (see [ADR-003](docs/adr/0003-canonical-store-and-ids.md) and [agent IDs](docs/agent/ids.md)):
 
-- `qid` — qualified name
-- `nid` — stable node id (lockfile in M2)
-- `hid` — content hash
+- `qid` — qualified name (changes on rename)
+- `nid` — stable node id for symbols in `forge.lock.json`
+- `hid` — content hash of the source slice
 
 ## Documentation
 

@@ -2,14 +2,13 @@
 
 ## P0
 
-- M2: `forge.lock.json` nid assignment
-- M2: MCP `forge_query` / `forge_get`
-- M2: Semantic `replace_expr` patch (preview first)
+- M3: Effects (`net`, `fs`, `env`)
+- M3: `extern` npm
 
 ## P1
 
-- Effects (`net`, `fs`, `env`)
-- `extern` npm
+- Rename-preserving nids (explicit rename op, not silent re-hash)
+- Additional patch ops beyond `replace_expr`
 
 ## Later
 

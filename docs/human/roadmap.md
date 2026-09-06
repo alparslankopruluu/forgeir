@@ -6,15 +6,15 @@ Measurable milestones. Features listed here are not shipped until the acceptance
 
 Parse, check, emit TypeScript, and run `examples/add`. JSON diagnostics. MCP stub (`forge_status`, `forge_validate`). Memory Bank and ADRs.
 
-## M1 — Language kernel (current)
+## M1 — Language kernel
 
 **Done:** records, `bool`, `str`, comparisons, `if`/`else`, `match`, field access, calls, `list[T]`, `Option[T]`, `Result[T, E]`, TYPE-002 `fixes[]`.
 
-M1 language kernel is complete. Next milestone is M2 (addressability + MCP).
+## M2 — Addressability + MCP (current)
 
-## M2 — Addressability + MCP
+**Done:** `forge.lock.json` symbol nids, `forge_query` / `forge_get`, `replace_expr` preview (apply opt-in), stdio MCP with five tools.
 
-`forge.lock.json` node IDs, `forge_query` / `forge_get`, semantic patch preview/apply, full stdio MCP.
+Not done in M2: rename-preserving nids, patch ops other than `replace_expr`. Next milestone is M3.
 
 ## M3 — Interop + effects + harness
 

@@ -27,12 +27,15 @@ Node 22+, pnpm 10. Package manager is pinned in `package.json`.
 - `packages/syntax` — lexer, parser, AST
 - `packages/sema` — typechecker
 - `packages/diag` — diagnostic codes and JSON
+- `packages/ir` — lockfile and semantic graph index
+- `packages/patch` — `replace_expr` preview
 - `packages/emit-ts` — TypeScript backend
 - `packages/cli` — `forge`
-- `packages/mcp` — stdio MCP stub
+- `packages/mcp` — stdio MCP (5 tools)
 - `examples/` — canonical `.fir` programs
 - `tests/` — unit and e2e
 - `memory/` — project continuity across sessions
+- `forge.lock.json` — committed symbol nid table
 
 ## Rules
 
