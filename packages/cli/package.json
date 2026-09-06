@@ -12,7 +12,9 @@
   "dependencies": {
     "@forgeir/diag": "workspace:*",
     "@forgeir/emit-ts": "workspace:*",
+    "@forgeir/ir": "workspace:*",
     "@forgeir/mcp": "workspace:*",
+    "@forgeir/patch": "workspace:*",
     "@forgeir/sema": "workspace:*",
     "@forgeir/syntax": "workspace:*"
   }

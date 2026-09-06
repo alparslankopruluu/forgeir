@@ -1,0 +1,26 @@
+{
+  "schema": "forge.lock/v1",
+  "ids": {
+    "examples.add": "nid_f08ae703962a3a0e",
+    "examples.add.add": "nid_06623e8874aa8edb",
+    "examples.add.add/param/a": "nid_5b10d65328d75a82",
+    "examples.add.add/param/b": "nid_07b63b6a96c4b6ff",
+    "examples.clamp": "nid_dd43e96d17c052b3",
+    "examples.clamp.Bounds": "nid_ad489dddbb056228",
+    "examples.clamp.Bounds.hi": "nid_ab34faa8bd7a301e",
+    "examples.clamp.Bounds.lo": "nid_f30c84765a58197e",
+    "examples.clamp.clamp": "nid_f1c50012c6f0b3e8",
+    "examples.clamp.clamp/param/b": "nid_fbb77ad30b4f4abe",
+    "examples.clamp.clamp/param/x": "nid_bbfde1aff9c03254",
+    "examples.clamp.clamp10": "nid_2245a73b4dfa94b2",
+    "examples.clamp.clamp10/param/x": "nid_1c612c383c7ee953",
+    "examples.option": "nid_3b2304bfabd407d7",
+    "examples.option.demo": "nid_f9f6372e2688a25a",
+    "examples.option.empty": "nid_dfaa2f15d64177ff",
+    "examples.option.first_or": "nid_3f56f642b0a94ced",
+    "examples.option.first_or/param/fallback": "nid_63d6e5f1b209c7d0",
+    "examples.option.first_or/param/xs": "nid_8e8b980d0fcc47f6",
+    "examples.option.parse_pos": "nid_c5230cf02bd6bee6",
+    "examples.option.parse_pos/param/x": "nid_1dad32a25f9460fc"
+  }
+}
