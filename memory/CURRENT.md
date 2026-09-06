@@ -46,7 +46,7 @@ None.
 ## Last validated state
 
 ```
-Last validated commit: 53514d9
+Last validated commit: 212a52b
 Current milestone: M4
 Completed: forge.http fetch facade; compiler oracles (11); net→async emit
 In progress: none
