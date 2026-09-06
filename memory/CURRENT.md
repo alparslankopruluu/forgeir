@@ -43,7 +43,7 @@ None.
 ## Last validated state
 
 ```
-Last validated commit: df181be
+Last validated commit: 2752d7d
 Current milestone: M5
 Completed: use imports; calc twice(3)→6; T23 oracle
 In progress: none
