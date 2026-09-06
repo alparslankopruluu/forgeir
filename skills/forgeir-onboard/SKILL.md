@@ -33,6 +33,7 @@ pnpm bench
 pnpm forge query path.fir
 pnpm forge get path.fir <qid> --detail body
 pnpm forge patch path.fir --qid <qid> --expr '<source>'
+pnpm forge patch path.fir --qid <qid> --rename <name>
 ```
 
 If `check --json` reports errors, repair the `.fir` source. Prefer `forge_patch` preview over rewriting the file. Do not edit emitted `.ts`.

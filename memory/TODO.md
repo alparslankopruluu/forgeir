@@ -3,12 +3,12 @@
 ## P0
 
 - LLM token harness (frozen prompts, N ≥ 3 before any README figure)
-- Rename-preserving nids (explicit rename op, not silent re-hash)
 
 ## P1
 
-- Additional patch ops beyond `replace_expr`
+- Additional patch ops beyond `replace_expr` / `rename`
 - `use` / multi-file modules
+- Cross-file rename (needs `use`)
 - Stay-on-TS vs native `core` decision (ADR later)
 
 ## Later

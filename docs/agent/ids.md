@@ -8,7 +8,7 @@ Three identifiers (ADR-003):
 
 Lockfile schema is `forge.lock/v1`: a sorted `qid → nid` map. `forge lock <file>` upserts that file's symbols into `./forge.lock.json` and does not delete other modules. `forge check` does not write the lockfile.
 
-Rename: a new qid gets a new nid. The old qid remains in the lockfile. Rename-preserving identity is not implemented.
+Silent source edits that change a name allocate a new nid. **`rename` patch** retargets lockfile keys so the nid follows the symbol: `examples.add.add` → `examples.add.sum` keeps the same nid, including `/param/` children. Expr nids are not stored and still change.
 
 ## Query
 
@@ -26,10 +26,11 @@ Default kind is `symbol` (no exprs). Default limit is 20. Query never dumps sour
 
 ## Patch
 
-Only `replace_expr`. Target an expr qid/nid, or a fn (uses the body span). Default is preview (hunks, no write). `--apply` / MCP `mode: apply` writes if the selector is valid (`PATCH-001` refuses unknown or non-expr targets). Apply may write a program that still has type errors.
+Ops: `replace_expr` (expr or fn body) and `rename` (fn, extern, or record in the same file; updates call/construct/type sites). Default is preview. `--apply` / MCP `mode: apply` writes if the selector is valid (`PATCH-001` refuses bad targets). Rename apply also rewrites `forge.lock.json` keys when they change. `replace_expr` apply may write a program that still has type errors.
 
 ```
 pnpm forge patch examples/add/main.fir --qid examples.add.add@body --expr 'a - b'
+pnpm forge patch examples/add/main.fir --qid examples.add.add --rename sum
 ```
 
 MCP tools (5, cap 8): `forge_status`, `forge_validate`, `forge_query`, `forge_get`, `forge_patch`.

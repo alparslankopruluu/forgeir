@@ -25,7 +25,7 @@ Unison-style SQLite as source of truth fights GitHub PRs. Darklang-style hosted 
 
 ## Consequences
 
-M0 derived `nid` from a seed (usually qid) without writing `forge.lock.json`. M2 writes a committed `forge.lock.json` that maps **symbol** qids to nids. A new qid still gets a new nid; rename-preserving identity is not implemented. Expr nids are derived from expr qids and are not stored.
+M0 derived `nid` from a seed (usually qid) without writing `forge.lock.json`. M2 writes a committed `forge.lock.json` that maps **symbol** qids to nids. A silent name change still allocates a new nid. The `rename` patch op retargets lockfile keys so the nid follows the symbol. Expr nids are derived from expr qids and are not stored.
 
 ## Revisit when
 

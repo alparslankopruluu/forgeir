@@ -24,6 +24,6 @@ M1 language: `module`, `record`, `fn`, `int`, `bool`, `str`, `list[T]`, `Option[
 
 M3: `extern fn name(...) -> T = "module.export"` and `! { net | fs | env }` (omit = pure). Unknown syntax is a `PARSE-001` error, not a silent skip. Unknown effects are `EFFECT-002`. Calling a more-effectful function from a purer one is `EFFECT-001`.
 
-M2 addressability: `forge lock` writes symbol nids to `forge.lock.json`. `forge query` / `forge get` list compact IR nodes. `forge patch` previews `replace_expr` (add `--apply` to write). See [IDs, query, and patch](../agent/ids.md).
+M2 addressability: `forge lock` writes symbol nids to `forge.lock.json`. `forge query` / `forge get` list compact IR nodes. `forge patch` previews `replace_expr` or `--rename` (add `--apply` to write). Use `rename` so nids survive. See [IDs, query, and patch](../agent/ids.md).
 
 See [agent language kernel](../agent/language.md) for the compact grammar.

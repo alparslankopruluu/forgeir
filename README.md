@@ -19,7 +19,7 @@ This thesis is **unproven**. There are no published token-savings figures in thi
 - Deterministic TypeScript ESM emit
 - CLI: `forge parse | check | emit | run | lock | query | get | patch | mcp`
 - `forge.lock.json` symbol nid table (`forge.lock/v1`)
-- Semantic `replace_expr` (preview default; `--apply` opt-in)
+- Semantic `replace_expr` and `rename` (preview default; `--apply` opt-in). Rename retargets lockfile nids.
 - `extern fn ... = "module.export"` → ESM `import`; typed facade only (no `.d.ts` import)
 - Explicit effects `! { net }`, `! { fs }`, `! { env }` (omit = pure); `net` lowers to `async` TypeScript; `forge run --allow`
 - `@forgeir/http` thin `fetch` facade (`examples/http`)
@@ -31,8 +31,8 @@ This thesis is **unproven**. There are no published token-savings figures in thi
 ### Not implemented (do not treat as shipped)
 
 - Package registry, `use`/multi-file modules
-- Rename-preserving nids (a new qid gets a new nid; old lock entries remain)
-- Patch ops other than `replace_expr`
+- Silent rename (edit the name in `.fir` without the `rename` op) still allocates a new nid
+- Patch ops other than `replace_expr` and `rename`
 - LLVM, WASM, JVM, Swift, Kotlin backends
 - LLM benchmark scores (require a tagged `bench-vX` with N ≥ 3)
 

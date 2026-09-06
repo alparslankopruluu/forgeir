@@ -5,7 +5,7 @@
 | Thesis is false (no token/repair win) | existential | compiler oracles only | Do not publish numbers until tagged `bench-vX` N ≥ 3 | `pnpm bench` |
 | Syntax novelty increases model errors | high | untested | Familiar tokens (`fn`, `int`); keyword renaming is a bench | tokenizer matrix later |
 | Pretty-print round-trip never works | high | no printer | Span-splice `replace_expr` in M2 | `tests/patch.test.ts` |
-| nid/qid merge hell | high | lockfile maps qid→nid; rename allocates a new nid | ADR-003; keep old entries; no silent rewrite | two-branch rename fixture still needed |
+| nid/qid merge hell | high | silent edits allocate a new nid; `rename` op retargets keys | ADR-003; explicit `rename` patch | `tests/rename.test.ts` |
 | extern signatures lie | high | typed facades only | No `.d.ts` import; `EXTERN-001` on bad targets | `tests/extern.test.ts` |
 | Effect system too weak or noisy | med | closed set net/fs/env | Explicit `! { ... }`; omit = pure | EFFECT-001/002 tests |
 | MCP tool surface explodes | med | 5 tools in M2 | Cap 8 in v0.1 | tool-choice eval |
