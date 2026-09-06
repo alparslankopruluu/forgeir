@@ -3,10 +3,12 @@ import { qidJoin } from "@forgeir/core";
 import { Codes, type Diagnostic } from "@forgeir/diag";
 import {
   type Expr,
+  type Extern,
   type Fn,
   type Module,
   parse,
   type RecordDecl,
+  splitExternTarget,
   type TypeRef,
 } from "@forgeir/syntax";
 import {
@@ -26,6 +28,7 @@ export type CheckedModule = {
   name: string;
   records: RecordDecl[];
   functions: CheckedFn[];
+  externs: Extern[];
   span: Module["span"];
 };
 
@@ -37,8 +40,9 @@ export type AnalyzeResult = {
 const COMPARE = new Set(["==", "!=", "<", "<=", ">", ">="]);
 const RESERVED = new Set(["int", "bool", "str", "list", "Option", "Result"]);
 const BUILTIN_FNS = new Set(["Some", "Ok", "Err", "None"]);
+const KNOWN_EFFECTS = new Set(["net", "fs", "env"]);
 
-type FnSig = { params: Type[]; ret: Type };
+type FnSig = { params: Type[]; ret: Type; effects: string[] };
 type RecordSig = Map<string, Type>;
 
 type CheckCtx = {
@@ -46,6 +50,7 @@ type CheckCtx = {
   env: Map<string, Type>;
   records: Map<string, RecordSig>;
   functions: Map<string, FnSig>;
+  allowed: string[];
   diagnostics: Diagnostic[];
 };
 
@@ -111,7 +116,8 @@ export function check(mod: Module): AnalyzeResult {
     }
   }
 
-  for (const fn of mod.functions) {
+  const callables: Array<Fn | Extern> = [...mod.externs, ...mod.functions];
+  for (const fn of callables) {
     if (BUILTIN_FNS.has(fn.name)) {
       diagnostics.push({
         severity: "error",
@@ -137,7 +143,18 @@ export function check(mod: Module): AnalyzeResult {
       (p) => resolveType(p.type, qid, records, diagnostics) ?? TError,
     );
     const ret = resolveType(fn.returnType, qid, records, diagnostics) ?? TError;
-    functions.set(fn.name, { params, ret });
+    const effects = checkEffects(fn.effects, fn.span, qid, diagnostics);
+    if (fn.kind === "extern" && !splitExternTarget(fn.target)) {
+      diagnostics.push({
+        severity: "error",
+        code: Codes.EXTERN_TARGET,
+        message: `extern target '${fn.target}' must be module.export`,
+        span: fn.span,
+        qid,
+        received: fn.target,
+      });
+    }
+    functions.set(fn.name, { params, ret, effects });
   }
 
   const checked: CheckedFn[] = [];
@@ -155,7 +172,14 @@ export function check(mod: Module): AnalyzeResult {
         env.set(param.name, ty);
       }
     }
-    const ctx: CheckCtx = { qid, env, records, functions, diagnostics };
+    const ctx: CheckCtx = {
+      qid,
+      env,
+      records,
+      functions,
+      allowed: sig.effects,
+      diagnostics,
+    };
     const bodyType = typeExpr(fn.body, ctx, sig.ret);
     if (bodyType.tag !== "error" && !typeEq(bodyType, sig.ret)) {
       diagnostics.push(
@@ -174,10 +198,52 @@ export function check(mod: Module): AnalyzeResult {
       name: mod.name,
       records: mod.records,
       functions: checked,
+      externs: mod.externs,
       span: mod.span,
     },
     diagnostics,
   };
+}
+
+function checkEffects(
+  effects: string[],
+  span: Span,
+  qid: string,
+  diagnostics: Diagnostic[],
+): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const name of effects) {
+    if (!KNOWN_EFFECTS.has(name)) {
+      diagnostics.push({
+        severity: "error",
+        code: Codes.EFFECT_UNKNOWN,
+        message: `unknown effect '${name}'`,
+        span,
+        qid,
+        received: name,
+        expected: "net | fs | env",
+      });
+      continue;
+    }
+    if (seen.has(name)) {
+      diagnostics.push({
+        severity: "error",
+        code: Codes.TYPE_DUPLICATE,
+        message: `duplicate effect '${name}'`,
+        span,
+        qid,
+      });
+      continue;
+    }
+    seen.add(name);
+    out.push(name);
+  }
+  return out;
+}
+
+function effectLabel(effects: string[]): string {
+  return effects.length === 0 ? "pure" : `! { ${effects.join(", ")} }`;
 }
 
 function resolveType(
@@ -550,6 +616,27 @@ function typeExpr(expr: Expr, ctx: CheckCtx, expected?: Type): Type {
             mismatch(argExpected, got, arg.span, ctx.qid, `argument ${i + 1}`),
           );
         }
+      }
+      const missing = sig.effects.filter((e) => !ctx.allowed.includes(e));
+      if (missing.length > 0) {
+        const needed = [...ctx.allowed, ...missing].filter(
+          (e, i, all) => all.indexOf(e) === i,
+        );
+        ctx.diagnostics.push({
+          severity: "error",
+          code: Codes.EFFECT_MISSING,
+          message: `call '${expr.name}' requires ${effectLabel(sig.effects)}`,
+          span: expr.span,
+          qid: ctx.qid,
+          expected: effectLabel(sig.effects),
+          received: effectLabel(ctx.allowed),
+          fixes: [
+            {
+              kind: "add_effect",
+              message: `declare ${effectLabel(needed)} on this function`,
+            },
+          ],
+        });
       }
       return sig.ret;
     }
