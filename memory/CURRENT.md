@@ -40,7 +40,7 @@ None.
 ## Last validated state
 
 ```
-Last validated commit: 3a832f1
+Last validated commit: 530a8c7
 Current milestone: M4
 Completed: LLM harness with frozen prompts; skip without key; N≥3 mean gate
 In progress: none
