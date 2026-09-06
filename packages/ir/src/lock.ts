@@ -50,3 +50,37 @@ export function upsertNid(lock: Lockfile, qid: Qid): Nid {
   lock.ids[qid] = nid;
   return nid;
 }
+
+export function lockIdsEqual(a: Lockfile, b: Lockfile): boolean {
+  const keys = new Set([...Object.keys(a.ids), ...Object.keys(b.ids)]);
+  for (const key of keys) {
+    if (a.ids[key] !== b.ids[key]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+export function retargetQid(lock: Lockfile, from: Qid, to: Qid): Lockfile {
+  if (from === to) {
+    return { schema: lock.schema, ids: { ...lock.ids } };
+  }
+  const kept: Record<string, Nid> = {};
+  const moved: Record<string, Nid> = {};
+  for (const [qid, nid] of Object.entries(lock.ids)) {
+    if (!nid) {
+      continue;
+    }
+    if (
+      qid === from ||
+      qid.startsWith(`${from}.`) ||
+      qid.startsWith(`${from}/`) ||
+      qid.startsWith(`${from}@`)
+    ) {
+      moved[`${to}${qid.slice(from.length)}`] = nid;
+    } else {
+      kept[qid] = nid;
+    }
+  }
+  return { schema: lock.schema, ids: { ...kept, ...moved } };
+}

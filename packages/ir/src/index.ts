@@ -20,6 +20,8 @@ export type { Lockfile } from "./lock.ts";
 export {
   emptyLock,
   loadLock,
+  lockIdsEqual,
+  retargetQid,
   saveLock,
   upsertNid,
 } from "./lock.ts";
