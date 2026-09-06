@@ -23,7 +23,7 @@ This thesis is **unproven**. There are no published token-savings figures in thi
 - `extern fn ... = "module.export"` → ESM `import`; typed facade only (no `.d.ts` import)
 - Explicit effects `! { net }`, `! { fs }`, `! { env }` (omit = pure); `net` lowers to `async` TypeScript; `forge run --allow`
 - `@forgeir/http` thin `fetch` facade (`examples/http`)
-- Compiler oracles: `pnpm bench` (11 tasks). **No scores.**
+- Compiler oracles: `pnpm bench` (11 tasks). LLM harness: `pnpm bench:llm` (skipped without API key). **No scores.**
 - Examples: `examples/add`, `examples/clamp`, `examples/option`, `examples/wrap`, `examples/env`, `examples/http`
 - MCP (5 tools): `forge_status`, `forge_validate`, `forge_query`, `forge_get`, `forge_patch`
 - Agent docs, Memory Bank, ADRs
@@ -52,6 +52,7 @@ pnpm forge run examples/option/main.fir demo         # prints 10
 pnpm forge run examples/wrap/main.fir demo           # prints main.fir
 pnpm forge run examples/env/main.fir demo --allow env
 pnpm bench
+pnpm bench:llm
 pnpm forge emit examples/add/main.fir
 pnpm forge check --json examples/add/main.fir
 pnpm forge lock examples/add/main.fir

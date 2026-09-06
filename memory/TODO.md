@@ -2,7 +2,7 @@
 
 ## P0
 
-- LLM token harness (frozen prompts, N ≥ 3 before any README figure)
+- Tagged `bench-vX` LLM run with N ≥ 3 before any README figure
 
 ## P1
 

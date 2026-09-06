@@ -18,6 +18,7 @@ pnpm format:check
 pnpm forge check examples/add/main.fir
 pnpm forge run examples/add/main.fir
 pnpm bench
+pnpm bench:llm
 ```
 
 Node 22+, pnpm 10. Package manager is pinned in `package.json`.
@@ -33,7 +34,7 @@ Node 22+, pnpm 10. Package manager is pinned in `package.json`.
 - `packages/emit-ts` — TypeScript backend (`net` → async)
 - `packages/http` — `fetch` facade for `extern ... = "@forgeir/http.get"`
 - `packages/cli` — `forge`
-- `benches/` — compiler oracles (`pnpm bench`, no scores)
+- `benches/` — compiler oracles and LLM harness (`pnpm bench`, `pnpm bench:llm`; no README scores)
 - `packages/mcp` — stdio MCP (5 tools)
 - `examples/` — canonical `.fir` programs
 - `tests/` — unit and e2e

@@ -20,6 +20,6 @@ Parse, check, emit TypeScript, and run `examples/add`. JSON diagnostics. MCP stu
 
 ## M4 — Adapters + compiler oracles (current)
 
-**Done:** `@forgeir/http` over `fetch`, `net` → async TS, `pnpm bench` runs 11 compiler oracles. Same-file `rename` patch retargets lockfile nids. No scores. No `bench-vX` tag.
+**Done:** `@forgeir/http` over `fetch`, `net` → async TS, `pnpm bench` compiler oracles, same-file `rename`, `pnpm bench:llm` (skip without key; N ≥ 3 gate). No scores. No `bench-vX` tag.
 
-Not done in M4: LLM token harness, `use`/multi-file modules. Stay-on-TS vs native `core` is still open.
+Not done in M4: tagged LLM evidence, `use`/multi-file modules. Stay-on-TS vs native `core` is still open.

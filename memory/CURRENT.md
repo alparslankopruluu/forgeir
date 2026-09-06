@@ -1,19 +1,18 @@
 # CURRENT
 
-Current milestone: M4 (adapters + compiler oracles + rename)
+Current milestone: M4 (adapters + oracles + rename + LLM harness)
 
-Current implementation slice: same-file `rename` patch that retargets lockfile nids.
+Current implementation slice: frozen-prompt LLM token harness (skip without key).
 
 ## What is working
 
-- M0–M3 language, lockfile, query/get, `replace_expr`, `extern`, effects
-- `@forgeir/http.get` thin `fetch` facade; `net` → async TS
-- Compiler oracles: 11/11 via `pnpm bench` (no scores)
-- `rename` patch (fn, extern, record) preserves symbol nids in `forge.lock.json`
+- M0–M3 language, lockfile, query/get, patch (`replace_expr`, `rename`), `extern`, effects
+- `@forgeir/http`; compiler oracles (`pnpm bench`)
+- `pnpm bench:llm` with frozen prompts T01/T17/T21; skip without API key; N ≥ 3 gate on means
 
 ## What is incomplete
 
-- LLM token harness / `bench-vX` / published scores
+- Tagged `bench-vX` / published scores
 - `use` / multi-file modules / cross-file rename
 - Patch ops other than `replace_expr` and `rename`
 - Stay-on-TS vs native `core` decision
@@ -24,31 +23,28 @@ None.
 
 ## Next highest-priority actions
 
-1. LLM token harness (frozen prompts; no README numbers until N ≥ 3)
-2. Extra patch ops / `use`
-3. Stay-on-TS vs native `core`
+1. `use` / multi-file modules
+2. Tagged LLM evidence (N ≥ 3, do not write README numbers here)
+3. Extra patch ops
 
 ## Relevant files
 
-- `packages/patch/src/index.ts`
-- `packages/ir/src/lock.ts`
-- `packages/cli/src/main.ts`
-- `docs/agent/ids.md`
+- `benches/llm/harness.ts`
+- `benches/prompts/`
+- `benches/llm/summary.ts`
 
 ## Relevant tests
 
-- `tests/rename.test.ts`
-- `tests/e2e/rename.test.ts`
-- `tests/mcp.test.ts`
+- `tests/llm-harness.test.ts`
 
 ## Last validated state
 
 ```
-Last validated commit: c7f870c
+Last validated commit: 3a832f1
 Current milestone: M4
-Completed: rename patch retargets lockfile nids
+Completed: LLM harness with frozen prompts; skip without key; N≥3 mean gate
 In progress: none
-Known issue: TS `number` emit is not i64-accurate (ADR-002); silent name edits still allocate a new nid
-Next recommended action: LLM harness or `use`
-Validation commands: pnpm test && pnpm typecheck && pnpm bench
+Known issue: TS `number` emit is not i64-accurate (ADR-002); no bench-vX tag
+Next recommended action: use/modules or a tagged LLM run
+Validation commands: pnpm test && pnpm typecheck && pnpm bench && pnpm bench:llm
 ```
