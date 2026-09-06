@@ -10,7 +10,9 @@ import {
   type RecordDecl,
   splitExternTarget,
   type TypeRef,
+  type Use,
 } from "@forgeir/syntax";
+import { readFir, resolveFir } from "./resolve.ts";
 import {
   TBool,
   TError,
@@ -23,17 +25,32 @@ import {
 
 export type CheckedFn = Fn & { qid: string };
 
+export type ImportBinding = {
+  name: string;
+  from: string;
+  kind: "fn" | "extern" | "record";
+  effects: string[];
+};
+
 export type CheckedModule = {
   kind: "module";
   name: string;
+  file: string;
+  uses: Use[];
   records: RecordDecl[];
   functions: CheckedFn[];
   externs: Extern[];
+  imports: ImportBinding[];
   span: Module["span"];
+};
+
+export type AnalyzeOptions = {
+  root?: string;
 };
 
 export type AnalyzeResult = {
   module: CheckedModule | null;
+  program: CheckedModule[];
   diagnostics: Diagnostic[];
 };
 
@@ -54,18 +71,215 @@ type CheckCtx = {
   diagnostics: Diagnostic[];
 };
 
-export function analyze(source: string, file: string): AnalyzeResult {
+type DeepCtx = {
+  root: string;
+  stack: string[];
+  cache: Map<string, AnalyzeResult>;
+};
+
+export function analyze(
+  source: string,
+  file: string,
+  options: AnalyzeOptions = {},
+): AnalyzeResult {
+  return analyzeDeep(source, file, {
+    root: options.root ?? process.cwd(),
+    stack: [],
+    cache: new Map(),
+  });
+}
+
+function analyzeDeep(
+  source: string,
+  file: string,
+  ctx: DeepCtx,
+): AnalyzeResult {
   const parsed = parse(source, file);
   if (!parsed.module) {
-    return { module: null, diagnostics: parsed.diagnostics };
+    return { module: null, program: [], diagnostics: parsed.diagnostics };
   }
-  return check(parsed.module);
+  const qid = parsed.module.name;
+  const cached = ctx.cache.get(qid);
+  if (cached) {
+    return cached;
+  }
+  if (ctx.stack.includes(qid)) {
+    const diagnostics: Diagnostic[] = [
+      {
+        severity: "error",
+        code: Codes.USE_CYCLE,
+        message: `module cycle involving '${qid}'`,
+        qid,
+      },
+    ];
+    return { module: null, program: [], diagnostics };
+  }
+  const nextCtx: DeepCtx = {
+    root: ctx.root,
+    stack: [...ctx.stack, qid],
+    cache: ctx.cache,
+  };
+  const diagnostics: Diagnostic[] = [];
+  const seedRecords = new Map<string, RecordSig>();
+  const seedFunctions = new Map<string, FnSig>();
+  const imports: ImportBinding[] = [];
+  const program: CheckedModule[] = [];
+  const seenImport = new Set<string>();
+
+  for (const u of parsed.module.uses) {
+    const path = resolveFir(u.module, ctx.root);
+    if (!path) {
+      diagnostics.push({
+        severity: "error",
+        code: Codes.USE_RESOLVE,
+        message: `cannot resolve module '${u.module}'`,
+        span: u.span,
+        qid,
+        received: u.module,
+      });
+      continue;
+    }
+    const depSource = readFir(path);
+    if (depSource === null) {
+      diagnostics.push({
+        severity: "error",
+        code: Codes.USE_RESOLVE,
+        message: `cannot read module '${u.module}'`,
+        span: u.span,
+        qid,
+      });
+      continue;
+    }
+    const dep = analyzeDeep(depSource, path, nextCtx);
+    diagnostics.push(...dep.diagnostics);
+    for (const m of dep.program) {
+      if (!program.some((p) => p.name === m.name)) {
+        program.push(m);
+      }
+    }
+    if (!dep.module) {
+      continue;
+    }
+    for (const name of u.names) {
+      if (seenImport.has(name)) {
+        diagnostics.push({
+          severity: "error",
+          code: Codes.USE_DUPLICATE,
+          message: `duplicate import '${name}'`,
+          span: u.span,
+          qid,
+        });
+        continue;
+      }
+      seenImport.add(name);
+      const depRecords = recordsFromModule(dep.module);
+      const fn = dep.module.functions.find((f) => f.name === name);
+      const ext = dep.module.externs.find((e) => e.name === name);
+      const rec = dep.module.records.find((r) => r.name === name);
+      if (fn) {
+        seedFunctions.set(name, callableSig(fn, depRecords));
+        imports.push({
+          name,
+          from: u.module,
+          kind: "fn",
+          effects: fn.effects,
+        });
+        continue;
+      }
+      if (ext) {
+        seedFunctions.set(name, callableSig(ext, depRecords));
+        imports.push({
+          name,
+          from: u.module,
+          kind: "extern",
+          effects: ext.effects,
+        });
+        continue;
+      }
+      if (rec) {
+        const fields = depRecords.get(name) ?? new Map();
+        seedRecords.set(name, fields);
+        imports.push({ name, from: u.module, kind: "record", effects: [] });
+        continue;
+      }
+      diagnostics.push({
+        severity: "error",
+        code: Codes.USE_EXPORT,
+        message: `'${name}' is not exported by ${u.module}`,
+        span: u.span,
+        qid,
+        received: name,
+      });
+    }
+  }
+
+  const checked = checkModule(
+    parsed.module,
+    seedRecords,
+    seedFunctions,
+    imports,
+    file,
+  );
+  diagnostics.push(...checked.diagnostics);
+  if (diagnostics.length > 0 || !checked.module) {
+    const failed = { module: null, program: [], diagnostics };
+    ctx.cache.set(qid, failed);
+    return failed;
+  }
+  const result: AnalyzeResult = {
+    module: checked.module,
+    program: [...program, checked.module],
+    diagnostics,
+  };
+  ctx.cache.set(qid, result);
+  return result;
 }
 
 export function check(mod: Module): AnalyzeResult {
-  const diagnostics: Diagnostic[] = [];
+  return checkModule(mod, new Map(), new Map(), [], mod.span.file);
+}
+
+function recordsFromModule(mod: CheckedModule): Map<string, RecordSig> {
   const records = new Map<string, RecordSig>();
-  const functions = new Map<string, FnSig>();
+  for (const rec of mod.records) {
+    records.set(rec.name, new Map());
+  }
+  for (const rec of mod.records) {
+    const fields = records.get(rec.name);
+    if (!fields) {
+      continue;
+    }
+    for (const field of rec.fields) {
+      fields.set(
+        field.name,
+        resolveType(field.type, qidJoin(mod.name, rec.name), records, []) ??
+          TError,
+      );
+    }
+  }
+  return records;
+}
+
+function callableSig(fn: Fn | Extern, records: Map<string, RecordSig>): FnSig {
+  return {
+    params: fn.params.map(
+      (p) => resolveType(p.type, "", records, []) ?? TError,
+    ),
+    ret: resolveType(fn.returnType, "", records, []) ?? TError,
+    effects: fn.effects,
+  };
+}
+
+function checkModule(
+  mod: Module,
+  seedRecords: Map<string, RecordSig>,
+  seedFunctions: Map<string, FnSig>,
+  imports: ImportBinding[],
+  file: string,
+): AnalyzeResult {
+  const diagnostics: Diagnostic[] = [];
+  const records = new Map<string, RecordSig>(seedRecords);
+  const functions = new Map<string, FnSig>(seedFunctions);
 
   for (const rec of mod.records) {
     if (RESERVED.has(rec.name)) {
@@ -190,17 +404,22 @@ export function check(mod: Module): AnalyzeResult {
   }
 
   if (diagnostics.length > 0) {
-    return { module: null, diagnostics };
+    return { module: null, program: [], diagnostics };
   }
+  const checkedModule: CheckedModule = {
+    kind: "module",
+    name: mod.name,
+    file,
+    uses: mod.uses,
+    records: mod.records,
+    functions: checked,
+    externs: mod.externs,
+    imports,
+    span: mod.span,
+  };
   return {
-    module: {
-      kind: "module",
-      name: mod.name,
-      records: mod.records,
-      functions: checked,
-      externs: mod.externs,
-      span: mod.span,
-    },
+    module: checkedModule,
+    program: [checkedModule],
     diagnostics,
   };
 }
