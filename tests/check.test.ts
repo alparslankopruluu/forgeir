@@ -30,7 +30,7 @@ fn f(a: int) -> int {
   it("rejects unknown type names with TYPE-003", () => {
     const result = analyze(
       `module m
-fn f(a: str) -> int {
+fn f(a: Widget) -> int {
   a
 }
 `,
@@ -38,7 +38,7 @@ fn f(a: str) -> int {
     );
     const diag = result.diagnostics.find((d) => d.code === "TYPE-003");
     expect(diag).toBeDefined();
-    expect(diag?.received).toBe("str");
+    expect(diag?.received).toBe("Widget");
   });
 
   it("rejects bool vs int with TYPE-002 and repair fixes", () => {

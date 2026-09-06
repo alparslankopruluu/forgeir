@@ -7,7 +7,17 @@ import {
   type Module,
   parse,
   type RecordDecl,
+  type TypeRef,
 } from "@forgeir/syntax";
+import {
+  TBool,
+  TError,
+  TInt,
+  TStr,
+  type Type,
+  typeEq,
+  typeStr,
+} from "./type.ts";
 
 export type CheckedFn = Fn & { qid: string };
 
@@ -24,17 +34,16 @@ export type AnalyzeResult = {
   diagnostics: Diagnostic[];
 };
 
-const INT = "int";
-const BOOL = "bool";
-const ERROR = "error";
 const COMPARE = new Set(["==", "!=", "<", "<=", ">", ">="]);
+const RESERVED = new Set(["int", "bool", "str", "list", "Option", "Result"]);
+const BUILTIN_FNS = new Set(["Some", "Ok", "Err", "None"]);
 
-type FnSig = { params: string[]; ret: string };
-type RecordSig = Map<string, string>;
+type FnSig = { params: Type[]; ret: Type };
+type RecordSig = Map<string, Type>;
 
 type CheckCtx = {
   qid: string;
-  env: Map<string, string>;
+  env: Map<string, Type>;
   records: Map<string, RecordSig>;
   functions: Map<string, FnSig>;
   diagnostics: Diagnostic[];
@@ -54,7 +63,7 @@ export function check(mod: Module): AnalyzeResult {
   const functions = new Map<string, FnSig>();
 
   for (const rec of mod.records) {
-    if (rec.name === INT || rec.name === BOOL) {
+    if (RESERVED.has(rec.name)) {
       diagnostics.push({
         severity: "error",
         code: Codes.TYPE_DUPLICATE,
@@ -74,7 +83,14 @@ export function check(mod: Module): AnalyzeResult {
       });
       continue;
     }
-    const fields: RecordSig = new Map();
+    records.set(rec.name, new Map());
+  }
+
+  for (const rec of mod.records) {
+    const fields = records.get(rec.name);
+    if (!fields) {
+      continue;
+    }
     for (const field of rec.fields) {
       if (fields.has(field.name)) {
         diagnostics.push({
@@ -85,31 +101,27 @@ export function check(mod: Module): AnalyzeResult {
           qid: qidJoin(mod.name, rec.name, field.name),
         });
       }
-      fields.set(field.name, field.type.name);
-    }
-    records.set(rec.name, fields);
-  }
-
-  for (const rec of mod.records) {
-    const fields = records.get(rec.name);
-    if (!fields) {
-      continue;
-    }
-    for (const field of rec.fields) {
-      const resolved = resolveTypeName(
-        field.type.name,
-        field.type.span,
+      const ty = resolveType(
+        field.type,
         qidJoin(mod.name, rec.name, field.name),
         records,
         diagnostics,
       );
-      if (resolved) {
-        fields.set(field.name, resolved);
-      }
+      fields.set(field.name, ty ?? TError);
     }
   }
 
   for (const fn of mod.functions) {
+    if (BUILTIN_FNS.has(fn.name)) {
+      diagnostics.push({
+        severity: "error",
+        code: Codes.TYPE_DUPLICATE,
+        message: `function name '${fn.name}' is reserved`,
+        span: fn.span,
+        qid: qidJoin(mod.name, fn.name),
+      });
+      continue;
+    }
     if (functions.has(fn.name)) {
       diagnostics.push({
         severity: "error",
@@ -120,24 +132,11 @@ export function check(mod: Module): AnalyzeResult {
       });
       continue;
     }
+    const qid = qidJoin(mod.name, fn.name);
     const params = fn.params.map(
-      (p) =>
-        resolveTypeName(
-          p.type.name,
-          p.type.span,
-          qidJoin(mod.name, fn.name),
-          records,
-          diagnostics,
-        ) ?? p.type.name,
+      (p) => resolveType(p.type, qid, records, diagnostics) ?? TError,
     );
-    const ret =
-      resolveTypeName(
-        fn.returnType.name,
-        fn.returnType.span,
-        qidJoin(mod.name, fn.name),
-        records,
-        diagnostics,
-      ) ?? fn.returnType.name;
+    const ret = resolveType(fn.returnType, qid, records, diagnostics) ?? TError;
     functions.set(fn.name, { params, ret });
   }
 
@@ -148,7 +147,7 @@ export function check(mod: Module): AnalyzeResult {
     if (!sig) {
       continue;
     }
-    const env = new Map<string, string>();
+    const env = new Map<string, Type>();
     for (let i = 0; i < fn.params.length; i += 1) {
       const param = fn.params[i];
       const ty = sig.params[i];
@@ -157,8 +156,8 @@ export function check(mod: Module): AnalyzeResult {
       }
     }
     const ctx: CheckCtx = { qid, env, records, functions, diagnostics };
-    const bodyType = typeExpr(fn.body, ctx);
-    if (bodyType !== ERROR && bodyType !== sig.ret) {
+    const bodyType = typeExpr(fn.body, ctx, sig.ret);
+    if (bodyType.tag !== "error" && !typeEq(bodyType, sig.ret)) {
       diagnostics.push(
         mismatch(sig.ret, bodyType, fn.body.span, qid, "function body"),
       );
@@ -181,30 +180,87 @@ export function check(mod: Module): AnalyzeResult {
   };
 }
 
-function resolveTypeName(
-  name: string,
-  span: Span,
+function resolveType(
+  ref: TypeRef,
   qid: string,
   records: Map<string, RecordSig>,
   diagnostics: Diagnostic[],
-): string | null {
-  if (name === INT || name === BOOL || records.has(name)) {
-    return name;
+): Type | null {
+  if (ref.name === "int" && ref.args.length === 0) {
+    return TInt;
+  }
+  if (ref.name === "bool" && ref.args.length === 0) {
+    return TBool;
+  }
+  if (ref.name === "str" && ref.args.length === 0) {
+    return TStr;
+  }
+  if (ref.name === "list") {
+    if (ref.args.length !== 1 || !ref.args[0]) {
+      diagnostics.push({
+        severity: "error",
+        code: Codes.TYPE_MISMATCH,
+        message: "list expects 1 type argument",
+        span: ref.span,
+        qid,
+        expected: "1",
+        received: String(ref.args.length),
+      });
+      return null;
+    }
+    const elem = resolveType(ref.args[0], qid, records, diagnostics);
+    return elem ? { tag: "list", elem } : null;
+  }
+  if (ref.name === "Option") {
+    if (ref.args.length !== 1 || !ref.args[0]) {
+      diagnostics.push({
+        severity: "error",
+        code: Codes.TYPE_MISMATCH,
+        message: "Option expects 1 type argument",
+        span: ref.span,
+        qid,
+        expected: "1",
+        received: String(ref.args.length),
+      });
+      return null;
+    }
+    const inner = resolveType(ref.args[0], qid, records, diagnostics);
+    return inner ? { tag: "option", inner } : null;
+  }
+  if (ref.name === "Result") {
+    if (ref.args.length !== 2 || !ref.args[0] || !ref.args[1]) {
+      diagnostics.push({
+        severity: "error",
+        code: Codes.TYPE_MISMATCH,
+        message: "Result expects 2 type arguments",
+        span: ref.span,
+        qid,
+        expected: "2",
+        received: String(ref.args.length),
+      });
+      return null;
+    }
+    const ok = resolveType(ref.args[0], qid, records, diagnostics);
+    const err = resolveType(ref.args[1], qid, records, diagnostics);
+    return ok && err ? { tag: "result", ok, err } : null;
+  }
+  if (ref.args.length === 0 && records.has(ref.name)) {
+    return { tag: "named", name: ref.name };
   }
   diagnostics.push({
     severity: "error",
     code: Codes.TYPE_UNKNOWN_TYPE,
-    message: `unknown type '${name}'`,
-    span,
+    message: `unknown type '${ref.name}'`,
+    span: ref.span,
     qid,
-    received: name,
+    received: ref.name,
   });
   return null;
 }
 
 function mismatch(
-  expected: string,
-  received: string,
+  expected: Type,
+  received: Type,
   span: Span,
   qid: string,
   what: string,
@@ -212,31 +268,46 @@ function mismatch(
   return {
     severity: "error",
     code: Codes.TYPE_MISMATCH,
-    message: `${what} has type ${received}, expected ${expected}`,
+    message: `${what} has type ${typeStr(received)}, expected ${typeStr(expected)}`,
     span,
     qid,
-    expected,
-    received,
+    expected: typeStr(expected),
+    received: typeStr(received),
     fixes: [
       {
         kind: "change_type",
-        message: `change this type to ${expected}`,
+        message: `change this type to ${typeStr(expected)}`,
       },
       {
         kind: "change_expected",
-        message: `change the expected type to ${received}`,
+        message: `change the expected type to ${typeStr(received)}`,
       },
     ],
   };
 }
 
-function typeExpr(expr: Expr, ctx: CheckCtx): string {
+function typeExpr(expr: Expr, ctx: CheckCtx, expected?: Type): Type {
   switch (expr.kind) {
     case "int":
-      return INT;
+      return TInt;
     case "bool":
-      return BOOL;
+      return TBool;
+    case "str":
+      return TStr;
     case "name": {
+      if (expr.name === "None") {
+        if (expected?.tag === "option") {
+          return expected;
+        }
+        ctx.diagnostics.push({
+          severity: "error",
+          code: Codes.TYPE_MISMATCH,
+          message: "cannot infer type of None",
+          span: expr.span,
+          qid: ctx.qid,
+        });
+        return TError;
+      }
       const found = ctx.env.get(expr.name);
       if (!found) {
         ctx.diagnostics.push({
@@ -246,74 +317,130 @@ function typeExpr(expr: Expr, ctx: CheckCtx): string {
           span: expr.span,
           qid: ctx.qid,
         });
-        return ERROR;
+        return TError;
       }
       return found;
     }
+    case "list": {
+      const elemExpected = expected?.tag === "list" ? expected.elem : undefined;
+      if (expr.elems.length === 0) {
+        if (elemExpected) {
+          return { tag: "list", elem: elemExpected };
+        }
+        ctx.diagnostics.push({
+          severity: "error",
+          code: Codes.TYPE_MISMATCH,
+          message: "cannot infer type of []",
+          span: expr.span,
+          qid: ctx.qid,
+        });
+        return TError;
+      }
+      let elem: Type = TError;
+      for (const item of expr.elems) {
+        const got = typeExpr(item, ctx, elemExpected);
+        if (got.tag === "error") {
+          continue;
+        }
+        if (elem.tag === "error") {
+          elem = got;
+        } else if (!typeEq(elem, got)) {
+          ctx.diagnostics.push(
+            mismatch(elem, got, item.span, ctx.qid, "list element"),
+          );
+        }
+      }
+      return elem.tag === "error" ? TError : { tag: "list", elem };
+    }
     case "binary": {
-      const left = typeExpr(expr.left, ctx);
-      const right = typeExpr(expr.right, ctx);
-      if (left === ERROR || right === ERROR) {
-        return ERROR;
+      const left = typeExpr(expr.left, ctx, TInt);
+      const right = typeExpr(expr.right, ctx, TInt);
+      if (left.tag === "error" || right.tag === "error") {
+        return TError;
       }
       if (COMPARE.has(expr.op)) {
-        if (left !== INT || right !== INT) {
+        if (left.tag !== "int" || right.tag !== "int") {
           ctx.diagnostics.push(
             mismatch(
-              INT,
-              left !== INT ? left : right,
+              TInt,
+              left.tag !== "int" ? left : right,
               expr.span,
               ctx.qid,
               `operator ${expr.op}`,
             ),
           );
-          return ERROR;
+          return TError;
         }
-        return BOOL;
+        return TBool;
       }
-      if (left !== INT || right !== INT) {
+      if (left.tag !== "int" || right.tag !== "int") {
         ctx.diagnostics.push(
           mismatch(
-            INT,
-            left !== INT ? left : right,
+            TInt,
+            left.tag !== "int" ? left : right,
             expr.span,
             ctx.qid,
             `operator ${expr.op}`,
           ),
         );
-        return ERROR;
+        return TError;
       }
-      return INT;
+      return TInt;
     }
     case "field": {
       const objectType = typeExpr(expr.object, ctx);
-      if (objectType === ERROR) {
-        return ERROR;
+      if (objectType.tag === "error") {
+        return TError;
       }
-      const rec = ctx.records.get(objectType);
-      if (!rec) {
+      if (objectType.tag !== "named") {
         ctx.diagnostics.push({
           severity: "error",
           code: Codes.TYPE_UNKNOWN,
-          message: `type '${objectType}' has no fields`,
+          message: `type '${typeStr(objectType)}' has no fields`,
           span: expr.span,
           qid: ctx.qid,
           received: expr.field,
         });
-        return ERROR;
+        return TError;
       }
-      const fieldType = rec.get(expr.field);
+      const rec = ctx.records.get(objectType.name);
+      const fieldType = rec?.get(expr.field);
       if (!fieldType) {
         ctx.diagnostics.push({
           severity: "error",
           code: Codes.TYPE_UNKNOWN,
-          message: `unknown field '${expr.field}' on ${objectType}`,
+          message: `unknown field '${expr.field}' on ${objectType.name}`,
           span: expr.span,
           qid: ctx.qid,
         });
-        return ERROR;
+        return TError;
       }
       return fieldType;
+    }
+    case "index": {
+      const objectType = typeExpr(expr.object, ctx);
+      const indexType = typeExpr(expr.index, ctx, TInt);
+      if (objectType.tag === "error") {
+        return TError;
+      }
+      if (objectType.tag !== "list") {
+        ctx.diagnostics.push(
+          mismatch(
+            { tag: "list", elem: TInt },
+            objectType,
+            expr.object.span,
+            ctx.qid,
+            "index target",
+          ),
+        );
+        return TError;
+      }
+      if (indexType.tag !== "error" && indexType.tag !== "int") {
+        ctx.diagnostics.push(
+          mismatch(TInt, indexType, expr.index.span, ctx.qid, "index"),
+        );
+      }
+      return { tag: "option", inner: objectType.elem };
     }
     case "construct": {
       const rec = ctx.records.get(expr.name);
@@ -326,7 +453,7 @@ function typeExpr(expr: Expr, ctx: CheckCtx): string {
           qid: ctx.qid,
           received: expr.name,
         });
-        return ERROR;
+        return TError;
       }
       const seen = new Set<string>();
       for (const init of expr.fields) {
@@ -340,8 +467,8 @@ function typeExpr(expr: Expr, ctx: CheckCtx): string {
           });
         }
         seen.add(init.name);
-        const expected = rec.get(init.name);
-        if (!expected) {
+        const fieldExpected = rec.get(init.name);
+        if (!fieldExpected) {
           ctx.diagnostics.push({
             severity: "error",
             code: Codes.TYPE_UNKNOWN,
@@ -351,10 +478,16 @@ function typeExpr(expr: Expr, ctx: CheckCtx): string {
           });
           continue;
         }
-        const got = typeExpr(init.value, ctx);
-        if (got !== ERROR && got !== expected) {
+        const got = typeExpr(init.value, ctx, fieldExpected);
+        if (got.tag !== "error" && !typeEq(got, fieldExpected)) {
           ctx.diagnostics.push(
-            mismatch(expected, got, init.span, ctx.qid, `field ${init.name}`),
+            mismatch(
+              fieldExpected,
+              got,
+              init.span,
+              ctx.qid,
+              `field ${init.name}`,
+            ),
           );
         }
       }
@@ -370,9 +503,18 @@ function typeExpr(expr: Expr, ctx: CheckCtx): string {
           });
         }
       }
-      return expr.name;
+      return { tag: "named", name: expr.name };
     }
     case "call": {
+      if (expr.name === "Some") {
+        return typeVariantCall(expr, ctx, expected, "option");
+      }
+      if (expr.name === "Ok") {
+        return typeVariantCall(expr, ctx, expected, "ok");
+      }
+      if (expr.name === "Err") {
+        return typeVariantCall(expr, ctx, expected, "err");
+      }
       const sig = ctx.functions.get(expr.name);
       if (!sig) {
         ctx.diagnostics.push({
@@ -382,7 +524,7 @@ function typeExpr(expr: Expr, ctx: CheckCtx): string {
           span: expr.span,
           qid: ctx.qid,
         });
-        return ERROR;
+        return TError;
       }
       if (expr.args.length !== sig.params.length) {
         ctx.diagnostics.push({
@@ -398,32 +540,32 @@ function typeExpr(expr: Expr, ctx: CheckCtx): string {
       const n = Math.min(expr.args.length, sig.params.length);
       for (let i = 0; i < n; i += 1) {
         const arg = expr.args[i];
-        const expected = sig.params[i];
-        if (!arg || !expected) {
+        const argExpected = sig.params[i];
+        if (!arg || !argExpected) {
           continue;
         }
-        const got = typeExpr(arg, ctx);
-        if (got !== ERROR && got !== expected) {
+        const got = typeExpr(arg, ctx, argExpected);
+        if (got.tag !== "error" && !typeEq(got, argExpected)) {
           ctx.diagnostics.push(
-            mismatch(expected, got, arg.span, ctx.qid, `argument ${i + 1}`),
+            mismatch(argExpected, got, arg.span, ctx.qid, `argument ${i + 1}`),
           );
         }
       }
       return sig.ret;
     }
     case "if": {
-      const cond = typeExpr(expr.cond, ctx);
-      if (cond !== ERROR && cond !== BOOL) {
+      const cond = typeExpr(expr.cond, ctx, TBool);
+      if (cond.tag !== "error" && cond.tag !== "bool") {
         ctx.diagnostics.push(
-          mismatch(BOOL, cond, expr.cond.span, ctx.qid, "if condition"),
+          mismatch(TBool, cond, expr.cond.span, ctx.qid, "if condition"),
         );
       }
-      const thenType = typeExpr(expr.thenBody, ctx);
-      const elseType = typeExpr(expr.elseBody, ctx);
-      if (thenType === ERROR || elseType === ERROR) {
-        return ERROR;
+      const thenType = typeExpr(expr.thenBody, ctx, expected);
+      const elseType = typeExpr(expr.elseBody, ctx, expected);
+      if (thenType.tag === "error" || elseType.tag === "error") {
+        return TError;
       }
-      if (thenType !== elseType) {
+      if (!typeEq(thenType, elseType)) {
         ctx.diagnostics.push(
           mismatch(
             thenType,
@@ -433,68 +575,229 @@ function typeExpr(expr: Expr, ctx: CheckCtx): string {
             "if else branch",
           ),
         );
-        return ERROR;
+        return TError;
       }
       return thenType;
     }
-    case "match": {
-      const scrut = typeExpr(expr.scrutinee, ctx);
-      if (scrut !== ERROR && scrut !== INT) {
-        ctx.diagnostics.push(
-          mismatch(INT, scrut, expr.scrutinee.span, ctx.qid, "match scrutinee"),
-        );
-      }
-      if (expr.arms.length === 0) {
+    case "match":
+      return typeMatch(expr, ctx, expected);
+  }
+}
+
+function typeVariantCall(
+  expr: Extract<Expr, { kind: "call" }>,
+  ctx: CheckCtx,
+  expected: Type | undefined,
+  which: "option" | "ok" | "err",
+): Type {
+  if (expr.args.length !== 1 || !expr.args[0]) {
+    ctx.diagnostics.push({
+      severity: "error",
+      code: Codes.TYPE_MISMATCH,
+      message: `${expr.name} expects 1 argument`,
+      span: expr.span,
+      qid: ctx.qid,
+      expected: "1",
+      received: String(expr.args.length),
+    });
+    return TError;
+  }
+  if (which === "option") {
+    const innerExpected =
+      expected?.tag === "option" ? expected.inner : undefined;
+    const inner = typeExpr(expr.args[0], ctx, innerExpected);
+    if (inner.tag === "error") {
+      return TError;
+    }
+    return { tag: "option", inner };
+  }
+  if (which === "ok") {
+    const okExpected = expected?.tag === "result" ? expected.ok : undefined;
+    const ok = typeExpr(expr.args[0], ctx, okExpected);
+    if (ok.tag === "error") {
+      return TError;
+    }
+    if (expected?.tag === "result") {
+      return expected;
+    }
+    return { tag: "result", ok, err: TError };
+  }
+  const errExpected = expected?.tag === "result" ? expected.err : undefined;
+  const err = typeExpr(expr.args[0], ctx, errExpected);
+  if (err.tag === "error") {
+    return TError;
+  }
+  if (expected?.tag === "result") {
+    return expected;
+  }
+  return { tag: "result", ok: TError, err };
+}
+
+function typeMatch(
+  expr: Extract<Expr, { kind: "match" }>,
+  ctx: CheckCtx,
+  expected?: Type,
+): Type {
+  const scrut = typeExpr(expr.scrutinee, ctx);
+  if (expr.arms.length === 0) {
+    ctx.diagnostics.push({
+      severity: "error",
+      code: Codes.TYPE_MISMATCH,
+      message: "match needs at least one arm",
+      span: expr.span,
+      qid: ctx.qid,
+    });
+    return TError;
+  }
+  if (scrut.tag === "int") {
+    return typeIntMatch(expr, ctx, expected);
+  }
+  if (scrut.tag === "option") {
+    return typeVariantMatch(expr, ctx, expected, "option", scrut.inner);
+  }
+  if (scrut.tag === "result") {
+    return typeVariantMatch(expr, ctx, expected, "result", scrut);
+  }
+  if (scrut.tag !== "error") {
+    ctx.diagnostics.push({
+      severity: "error",
+      code: Codes.TYPE_MISMATCH,
+      message: `cannot match on ${typeStr(scrut)}`,
+      span: expr.scrutinee.span,
+      qid: ctx.qid,
+      received: typeStr(scrut),
+    });
+  }
+  return TError;
+}
+
+function typeIntMatch(
+  expr: Extract<Expr, { kind: "match" }>,
+  ctx: CheckCtx,
+  expected?: Type,
+): Type {
+  let hasWildcard = false;
+  const ints = new Set<number>();
+  let armType: Type | null = null;
+  for (const arm of expr.arms) {
+    if (arm.pattern.kind === "wildcard") {
+      hasWildcard = true;
+    } else if (arm.pattern.kind === "int") {
+      if (ints.has(arm.pattern.value)) {
         ctx.diagnostics.push({
           severity: "error",
-          code: Codes.TYPE_MISMATCH,
-          message: "match needs at least one arm",
-          span: expr.span,
+          code: Codes.TYPE_DUPLICATE,
+          message: `duplicate match pattern ${arm.pattern.value}`,
+          span: arm.pattern.span,
           qid: ctx.qid,
         });
-        return ERROR;
       }
-      let hasWildcard = false;
-      const ints = new Set<number>();
-      let armType: string | null = null;
-      for (const arm of expr.arms) {
-        if (arm.pattern.kind === "wildcard") {
-          hasWildcard = true;
-        } else {
-          if (ints.has(arm.pattern.value)) {
-            ctx.diagnostics.push({
-              severity: "error",
-              code: Codes.TYPE_DUPLICATE,
-              message: `duplicate match pattern ${arm.pattern.value}`,
-              span: arm.pattern.span,
-              qid: ctx.qid,
-            });
-          }
-          ints.add(arm.pattern.value);
-        }
-        const bodyType = typeExpr(arm.body, ctx);
-        if (bodyType === ERROR) {
-          continue;
-        }
-        if (armType === null) {
-          armType = bodyType;
-        } else if (armType !== bodyType) {
-          ctx.diagnostics.push(
-            mismatch(armType, bodyType, arm.body.span, ctx.qid, "match arm"),
-          );
-        }
-      }
-      if (!hasWildcard) {
-        ctx.diagnostics.push({
-          severity: "error",
-          code: Codes.TYPE_MISMATCH,
-          message: "int match must include a _ arm",
-          span: expr.span,
-          qid: ctx.qid,
-          expected: "_",
-        });
-      }
-      return armType ?? ERROR;
+      ints.add(arm.pattern.value);
+    } else {
+      ctx.diagnostics.push(
+        mismatch(TInt, TError, arm.pattern.span, ctx.qid, "match pattern"),
+      );
+    }
+    const bodyType = typeExpr(arm.body, ctx, expected);
+    if (bodyType.tag === "error") {
+      continue;
+    }
+    if (armType === null) {
+      armType = bodyType;
+    } else if (!typeEq(armType, bodyType)) {
+      ctx.diagnostics.push(
+        mismatch(armType, bodyType, arm.body.span, ctx.qid, "match arm"),
+      );
     }
   }
+  if (!hasWildcard) {
+    ctx.diagnostics.push({
+      severity: "error",
+      code: Codes.TYPE_MISMATCH,
+      message: "int match must include a _ arm",
+      span: expr.span,
+      qid: ctx.qid,
+      expected: "_",
+    });
+  }
+  return armType ?? TError;
+}
+
+function typeVariantMatch(
+  expr: Extract<Expr, { kind: "match" }>,
+  ctx: CheckCtx,
+  expected: Type | undefined,
+  which: "option" | "result",
+  payload: Type | Extract<Type, { tag: "result" }>,
+): Type {
+  let hasWildcard = false;
+  const seen = new Set<string>();
+  let armType: Type | null = null;
+  for (const arm of expr.arms) {
+    const armEnv = new Map(ctx.env);
+    if (arm.pattern.kind === "wildcard") {
+      hasWildcard = true;
+    } else if (arm.pattern.kind === "variant") {
+      seen.add(arm.pattern.name);
+      if (which === "option") {
+        if (arm.pattern.name === "Some" && arm.pattern.bind) {
+          armEnv.set(arm.pattern.bind, payload as Type);
+        } else if (arm.pattern.name !== "Some" && arm.pattern.name !== "None") {
+          ctx.diagnostics.push({
+            severity: "error",
+            code: Codes.TYPE_MISMATCH,
+            message: `unexpected pattern ${arm.pattern.name} for Option`,
+            span: arm.pattern.span,
+            qid: ctx.qid,
+          });
+        }
+      } else {
+        const resultType = payload as Extract<Type, { tag: "result" }>;
+        if (arm.pattern.name === "Ok" && arm.pattern.bind) {
+          armEnv.set(arm.pattern.bind, resultType.ok);
+        } else if (arm.pattern.name === "Err" && arm.pattern.bind) {
+          armEnv.set(arm.pattern.bind, resultType.err);
+        } else if (arm.pattern.name !== "Ok" && arm.pattern.name !== "Err") {
+          ctx.diagnostics.push({
+            severity: "error",
+            code: Codes.TYPE_MISMATCH,
+            message: `unexpected pattern ${arm.pattern.name} for Result`,
+            span: arm.pattern.span,
+            qid: ctx.qid,
+          });
+        }
+      }
+    } else {
+      ctx.diagnostics.push({
+        severity: "error",
+        code: Codes.TYPE_MISMATCH,
+        message: "variant match cannot use int patterns",
+        span: arm.pattern.span,
+        qid: ctx.qid,
+      });
+    }
+    const bodyType = typeExpr(arm.body, { ...ctx, env: armEnv }, expected);
+    if (bodyType.tag === "error") {
+      continue;
+    }
+    if (armType === null) {
+      armType = bodyType;
+    } else if (!typeEq(armType, bodyType)) {
+      ctx.diagnostics.push(
+        mismatch(armType, bodyType, arm.body.span, ctx.qid, "match arm"),
+      );
+    }
+  }
+  const required = which === "option" ? ["Some", "None"] : ["Ok", "Err"];
+  const covered = required.every((name) => seen.has(name));
+  if (!hasWildcard && !covered) {
+    ctx.diagnostics.push({
+      severity: "error",
+      code: Codes.TYPE_MISMATCH,
+      message: `${which} match must cover ${required.join(" and ")} or include _`,
+      span: expr.span,
+      qid: ctx.qid,
+    });
+  }
+  return armType ?? TError;
 }
