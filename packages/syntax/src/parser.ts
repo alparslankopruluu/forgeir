@@ -167,7 +167,23 @@ class Parser {
 
   private parseType(): TypeRef {
     const tok = this.expect("ident");
-    return { name: tok.value, span: tok.span };
+    const args: TypeRef[] = [];
+    let end = tok.span.end;
+    if (this.peek().kind === "lbracket") {
+      this.advance();
+      args.push(this.parseType());
+      while (this.peek().kind === "comma") {
+        this.advance();
+        args.push(this.parseType());
+      }
+      const close = this.expect("rbracket");
+      end = close.span.end;
+    }
+    return {
+      name: tok.value,
+      args,
+      span: { file: this.file, start: tok.span.start, end },
+    };
   }
 
   private parseQid(): string {
@@ -262,6 +278,22 @@ class Parser {
         };
         continue;
       }
+      if (this.peek().kind === "lbracket") {
+        this.advance();
+        const index = this.parseExpr();
+        const endTok = this.expect("rbracket");
+        expr = {
+          kind: "index",
+          object: expr,
+          index,
+          span: {
+            file: this.file,
+            start: expr.span.start,
+            end: endTok.span.end,
+          },
+        };
+        continue;
+      }
       if (this.peek().kind === "lparen") {
         if (expr.kind !== "name") {
           this.fail(
@@ -317,6 +349,13 @@ class Parser {
     if (tok.kind === "number") {
       this.advance();
       return { kind: "int", value: Number(tok.value), span: tok.span };
+    }
+    if (tok.kind === "string") {
+      this.advance();
+      return { kind: "str", value: tok.value, span: tok.span };
+    }
+    if (tok.kind === "lbracket") {
+      return this.parseList();
     }
     if (tok.kind === "ident") {
       this.advance();
@@ -390,6 +429,31 @@ class Parser {
     };
   }
 
+  private parseList(): Expr {
+    const startTok = this.expect("lbracket");
+    const elems: Expr[] = [];
+    if (this.peek().kind !== "rbracket") {
+      elems.push(this.parseExpr());
+      while (this.peek().kind === "comma") {
+        this.advance();
+        if (this.peek().kind === "rbracket") {
+          break;
+        }
+        elems.push(this.parseExpr());
+      }
+    }
+    const endTok = this.expect("rbracket");
+    return {
+      kind: "list",
+      elems,
+      span: {
+        file: this.file,
+        start: startTok.span.start,
+        end: endTok.span.end,
+      },
+    };
+  }
+
   private parseIf(): Expr {
     const start = this.peek().span.start;
     this.expect("if");
@@ -445,9 +509,39 @@ class Parser {
       this.advance();
       return { kind: "wildcard", span: tok.span };
     }
+    if (tok.kind === "ident" && tok.value === "None") {
+      this.advance();
+      return { kind: "variant", name: "None", bind: null, span: tok.span };
+    }
+    if (
+      tok.kind === "ident" &&
+      (tok.value === "Some" || tok.value === "Ok" || tok.value === "Err")
+    ) {
+      this.advance();
+      this.expect("lparen");
+      const inner = this.peek();
+      let bind: string | null = null;
+      if (inner.kind === "ident") {
+        this.advance();
+        bind = inner.value === "_" ? null : inner.value;
+      } else {
+        this.fail(
+          Codes.PARSE_UNEXPECTED,
+          "expected binding in variant pattern",
+          inner.span,
+        );
+      }
+      const endTok = this.expect("rparen");
+      return {
+        kind: "variant",
+        name: tok.value as "Some" | "Ok" | "Err",
+        bind,
+        span: { file: this.file, start: tok.span.start, end: endTok.span.end },
+      };
+    }
     this.fail(
       Codes.PARSE_UNEXPECTED,
-      "expected match pattern (int or _)",
+      "expected match pattern (int, _, Some, None, Ok, or Err)",
       tok.span,
     );
   }

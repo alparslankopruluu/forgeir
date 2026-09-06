@@ -31,6 +31,9 @@ export type TokenKind =
   | "gt"
   | "le"
   | "ge"
+  | "lbracket"
+  | "rbracket"
+  | "string"
   | "eof";
 
 export type Token = {
@@ -111,6 +114,52 @@ export function lex(source: string, file: string): LexResult {
       continue;
     }
 
+    if (ch === '"') {
+      i += 1;
+      let value = "";
+      let closed = false;
+      while (i < source.length) {
+        const cur = source[i] ?? "";
+        if (cur === '"') {
+          i += 1;
+          closed = true;
+          break;
+        }
+        if (cur === "\n") {
+          break;
+        }
+        if (cur === "\\" && i + 1 < source.length) {
+          const esc = source[i + 1] ?? "";
+          if (esc === "n") {
+            value += "\n";
+          } else if (esc === "t") {
+            value += "\t";
+          } else {
+            value += esc;
+          }
+          i += 2;
+          continue;
+        }
+        value += cur;
+        i += 1;
+      }
+      if (!closed) {
+        diagnostics.push({
+          severity: "error",
+          code: Codes.PARSE_UNEXPECTED,
+          message: "unterminated string",
+          span: spanAt(start, i),
+        });
+      } else {
+        tokens.push({
+          kind: "string",
+          value,
+          span: spanAt(start, i),
+        });
+      }
+      continue;
+    }
+
     if (isDigit(ch)) {
       i += 1;
       while (i < source.length && isDigit(source[i] ?? "")) {
@@ -170,6 +219,8 @@ export function lex(source: string, file: string): LexResult {
       ".": "dot",
       "<": "lt",
       ">": "gt",
+      "[": "lbracket",
+      "]": "rbracket",
     };
     const kind = singles[ch];
     if (kind) {

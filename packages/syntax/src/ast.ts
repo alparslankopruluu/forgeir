@@ -14,6 +14,7 @@ export type BinaryOp =
 
 export type TypeRef = {
   name: string;
+  args: TypeRef[];
   span: Span;
 };
 
@@ -44,7 +45,13 @@ export type FieldInit = {
 
 export type Pattern =
   | { kind: "int"; value: number; span: Span }
-  | { kind: "wildcard"; span: Span };
+  | { kind: "wildcard"; span: Span }
+  | {
+      kind: "variant";
+      name: "Some" | "None" | "Ok" | "Err";
+      bind: string | null;
+      span: Span;
+    };
 
 export type MatchArm = {
   pattern: Pattern;
@@ -56,8 +63,11 @@ export type Expr =
   | { kind: "name"; name: string; span: Span }
   | { kind: "int"; value: number; span: Span }
   | { kind: "bool"; value: boolean; span: Span }
+  | { kind: "str"; value: string; span: Span }
+  | { kind: "list"; elems: Expr[]; span: Span }
   | { kind: "binary"; op: BinaryOp; left: Expr; right: Expr; span: Span }
   | { kind: "field"; object: Expr; field: string; span: Span }
+  | { kind: "index"; object: Expr; index: Expr; span: Span }
   | { kind: "construct"; name: string; fields: FieldInit[]; span: Span }
   | { kind: "call"; name: string; args: Expr[]; span: Span }
   | { kind: "if"; cond: Expr; thenBody: Expr; elseBody: Expr; span: Span }
