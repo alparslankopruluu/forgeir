@@ -1,6 +1,6 @@
 # Initial benchmark tasks
 
-Definitions only. None of these except T01 have an implementation harness in M0.
+Definitions. Compiler oracles in `benches/oracles.ts` cover a subset (T01, T03, T04, T05, T11, T13, T17, T21, plus wrap/add check). LLM execution is not shipped. No scores.
 
 | ID | Task | Why |
 |---|---|---|
