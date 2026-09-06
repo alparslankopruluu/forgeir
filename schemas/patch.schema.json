@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forgeir.dev/schemas/patch.schema.json",
+  "title": "forge.patch/v1",
+  "type": "object",
+  "required": ["schema", "ops"],
+  "properties": {
+    "schema": { "const": "forge.patch/v1" },
+    "ops": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["op", "expr"],
+        "properties": {
+          "op": { "const": "replace_expr" },
+          "qid": { "type": "string" },
+          "nid": { "type": "string" },
+          "expr": { "type": "string" }
+        }
+      }
+    }
+  }
+}

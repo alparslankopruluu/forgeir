@@ -1,0 +1,15 @@
+{
+  "name": "@forgeir/patch",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@forgeir/diag": "workspace:*",
+    "@forgeir/ir": "workspace:*",
+    "@forgeir/sema": "workspace:*",
+    "@forgeir/syntax": "workspace:*"
+  }
+}
