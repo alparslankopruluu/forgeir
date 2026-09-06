@@ -13,7 +13,11 @@
     "lint": "biome check .",
     "format": "biome check --write .",
     "format:check": "biome check .",
-    "forge": "tsx packages/cli/src/main.ts"
+    "forge": "tsx packages/cli/src/main.ts",
+    "bench": "tsx benches/harness.ts"
+  },
+  "dependencies": {
+    "@forgeir/http": "workspace:*"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.4",

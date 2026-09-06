@@ -13,6 +13,7 @@ export default defineConfig({
       "@forgeir/ir": `${root}/packages/ir/src/index.ts`,
       "@forgeir/patch": `${root}/packages/patch/src/index.ts`,
       "@forgeir/emit-ts": `${root}/packages/emit-ts/src/index.ts`,
+      "@forgeir/http": `${root}/packages/http/src/index.js`,
       "@forgeir/mcp": `${root}/packages/mcp/src/index.ts`,
     },
   },

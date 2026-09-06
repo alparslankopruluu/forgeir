@@ -7,6 +7,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      '@forgeir/http':
+        specifier: workspace:*
+        version: link:packages/http
     devDependencies:
       '@biomejs/biome':
         specifier: ^2.2.4
@@ -61,6 +65,8 @@ importers:
       '@forgeir/syntax':
         specifier: workspace:*
         version: link:../syntax
+
+  packages/http: {}
 
   packages/ir:
     dependencies:
