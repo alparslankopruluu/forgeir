@@ -10,7 +10,14 @@ import {
 import type { Expr, Module } from "@forgeir/syntax";
 import { type Lockfile, upsertNid } from "./lock.ts";
 
-export type IrKind = "module" | "record" | "field" | "fn" | "param" | "expr";
+export type IrKind =
+  | "module"
+  | "record"
+  | "field"
+  | "fn"
+  | "extern"
+  | "param"
+  | "expr";
 
 export type IrNode = {
   nid: Nid;
@@ -137,6 +144,34 @@ export function indexModule(
       children: fieldNids,
     });
     childNids.push(recNid);
+  }
+
+  for (const ext of mod.externs) {
+    const extQid = qidJoin(mod.name, ext.name);
+    const extNid = upsertNid(next, extQid);
+    const extKids: Nid[] = [];
+    for (const param of ext.params) {
+      const paramQid = `${extQid}/param/${param.name}`;
+      const paramNid = upsertNid(next, paramQid);
+      push({
+        nid: paramNid,
+        qid: paramQid,
+        hid: sliceHid(param.span),
+        kind: "param",
+        span: param.span,
+        children: [],
+      });
+      extKids.push(paramNid);
+    }
+    push({
+      nid: extNid,
+      qid: extQid,
+      hid: sliceHid(ext.span),
+      kind: "extern",
+      span: ext.span,
+      children: extKids,
+    });
+    childNids.push(extNid);
   }
 
   for (const fn of mod.functions) {

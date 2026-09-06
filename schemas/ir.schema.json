@@ -8,7 +8,7 @@
   "properties": {
     "nid": { "type": "string", "pattern": "^nid_" },
     "kind": {
-      "enum": ["module", "record", "field", "fn", "param", "expr"]
+      "enum": ["module", "record", "field", "fn", "extern", "param", "expr"]
     },
     "qid": { "type": "string" },
     "hid": { "type": "string", "pattern": "^hid_" },
