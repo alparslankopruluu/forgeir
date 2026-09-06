@@ -32,9 +32,15 @@ importers:
       '@forgeir/emit-ts':
         specifier: workspace:*
         version: link:../emit-ts
+      '@forgeir/ir':
+        specifier: workspace:*
+        version: link:../ir
       '@forgeir/mcp':
         specifier: workspace:*
         version: link:../mcp
+      '@forgeir/patch':
+        specifier: workspace:*
+        version: link:../patch
       '@forgeir/sema':
         specifier: workspace:*
         version: link:../sema
@@ -56,14 +62,47 @@ importers:
         specifier: workspace:*
         version: link:../syntax
 
+  packages/ir:
+    dependencies:
+      '@forgeir/core':
+        specifier: workspace:*
+        version: link:../core
+      '@forgeir/syntax':
+        specifier: workspace:*
+        version: link:../syntax
+
   packages/mcp:
     dependencies:
       '@forgeir/diag':
         specifier: workspace:*
         version: link:../diag
+      '@forgeir/ir':
+        specifier: workspace:*
+        version: link:../ir
+      '@forgeir/patch':
+        specifier: workspace:*
+        version: link:../patch
       '@forgeir/sema':
         specifier: workspace:*
         version: link:../sema
+      '@forgeir/syntax':
+        specifier: workspace:*
+        version: link:../syntax
+
+  packages/patch:
+    dependencies:
+      '@forgeir/diag':
+        specifier: workspace:*
+        version: link:../diag
+      '@forgeir/ir':
+        specifier: workspace:*
+        version: link:../ir
+      '@forgeir/sema':
+        specifier: workspace:*
+        version: link:../sema
+      '@forgeir/syntax':
+        specifier: workspace:*
+        version: link:../syntax
 
   packages/sema:
     dependencies:

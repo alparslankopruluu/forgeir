@@ -8,6 +8,9 @@
   },
   "dependencies": {
     "@forgeir/diag": "workspace:*",
-    "@forgeir/sema": "workspace:*"
+    "@forgeir/ir": "workspace:*",
+    "@forgeir/patch": "workspace:*",
+    "@forgeir/sema": "workspace:*",
+    "@forgeir/syntax": "workspace:*"
   }
 }
