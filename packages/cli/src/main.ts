@@ -81,9 +81,9 @@ async function main(argv: string[]): Promise<number> {
   if (cmd === "run") {
     const file = requireFile(args[1]);
     const fnName = args[2] ?? "add";
-    const fnArgs = (args.slice(3).length > 0 ? args.slice(3) : ["2", "3"]).map(
-      Number,
-    );
+    const rest = args.slice(3);
+    const fnArgs =
+      rest.length > 0 ? rest.map(Number) : fnName === "add" ? [2, 3] : [];
     const source = await readFile(file, "utf8");
     const analyzed = analyze(source, file);
     if (!analyzed.module) {
