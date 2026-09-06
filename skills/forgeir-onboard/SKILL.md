@@ -28,6 +28,8 @@ pnpm forge run path.fir
 pnpm forge run examples/option/main.fir demo
 pnpm forge run examples/wrap/main.fir demo
 pnpm forge run examples/env/main.fir demo --allow env
+pnpm forge run examples/http/main.fir status_ok <url> --allow net
+pnpm bench
 pnpm forge query path.fir
 pnpm forge get path.fir <qid> --detail body
 pnpm forge patch path.fir --qid <qid> --expr '<source>'

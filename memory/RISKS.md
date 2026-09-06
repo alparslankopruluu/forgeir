@@ -2,7 +2,7 @@
 
 | Risk | Severity | Evidence | Mitigation | Test |
 |---|---|---|---|---|
-| Thesis is false (no token/repair win) | existential | untested | Do not publish numbers; run T17/T20 vs TypeScript in M3 | benches/tasks.md |
+| Thesis is false (no token/repair win) | existential | compiler oracles only | Do not publish numbers until tagged `bench-vX` N ≥ 3 | `pnpm bench` |
 | Syntax novelty increases model errors | high | untested | Familiar tokens (`fn`, `int`); keyword renaming is a bench | tokenizer matrix later |
 | Pretty-print round-trip never works | high | no printer | Span-splice `replace_expr` in M2 | `tests/patch.test.ts` |
 | nid/qid merge hell | high | lockfile maps qid→nid; rename allocates a new nid | ADR-003; keep old entries; no silent rewrite | two-branch rename fixture still needed |

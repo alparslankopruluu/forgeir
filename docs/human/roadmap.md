@@ -14,12 +14,12 @@ Parse, check, emit TypeScript, and run `examples/add`. JSON diagnostics. MCP stu
 
 **Done:** `forge.lock.json` symbol nids, `forge_query` / `forge_get`, `replace_expr` preview (apply opt-in), stdio MCP with five tools.
 
-## M3 — Interop + effects (current)
+## M3 — Interop + effects
 
 **Done:** `extern fn ... = "module.export"`, effect checker (`net`/`fs`/`env`, omit = pure), `forge run --allow`.
 
-Not done in M3: LLM benchmark harness, `forge.http` adapter, `use`/multi-file modules. No published scores until N ≥ 3. Next is M4 evidence.
+## M4 — Adapters + compiler oracles (current)
 
-## M4 — Evidence and adapters
+**Done:** `@forgeir/http` over `fetch`, `net` → async TS, `pnpm bench` runs 11 compiler oracles. No scores. No `bench-vX` tag.
 
-Ten-plus executed tasks, first tagged `bench-vX`, `forge.http` over `fetch`. Decision point: stay on TypeScript compiler vs native `core`.
+Not done in M4: LLM token harness, `use`/multi-file modules. Stay-on-TS vs native `core` is still open.

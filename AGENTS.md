@@ -17,6 +17,7 @@ pnpm typecheck
 pnpm format:check
 pnpm forge check examples/add/main.fir
 pnpm forge run examples/add/main.fir
+pnpm bench
 ```
 
 Node 22+, pnpm 10. Package manager is pinned in `package.json`.
@@ -29,8 +30,10 @@ Node 22+, pnpm 10. Package manager is pinned in `package.json`.
 - `packages/diag` — diagnostic codes and JSON
 - `packages/ir` — lockfile and semantic graph index
 - `packages/patch` — `replace_expr` preview
-- `packages/emit-ts` — TypeScript backend
+- `packages/emit-ts` — TypeScript backend (`net` → async)
+- `packages/http` — `fetch` facade for `extern ... = "@forgeir/http.get"`
 - `packages/cli` — `forge`
+- `benches/` — compiler oracles (`pnpm bench`, no scores)
 - `packages/mcp` — stdio MCP (5 tools)
 - `examples/` — canonical `.fir` programs
 - `tests/` — unit and e2e

@@ -2,7 +2,7 @@
 
 Read only what the task needs.
 
-1. [language.md](./language.md) — M1 surface syntax + M3 `extern` / effects
+1. [language.md](./language.md) — M1 surface + M3 `extern`/effects + M4 `forge.http`
 2. [ids.md](./ids.md) — qid/nid/hid, lockfile, query, get, `replace_expr`
 3. [../../memory/CURRENT.md](../../memory/CURRENT.md) — where the project actually is
 4. [../../AGENTS.md](../../AGENTS.md) — how to work on this compiler repo

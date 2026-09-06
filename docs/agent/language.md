@@ -28,6 +28,8 @@ Pattern := int | "_" | "None" | "Some" "(" ident ")" | "Ok" "(" ident ")" | "Err
 - Effects are a closed set: `net`, `fs`, `env`. Omit `! { ... }` for pure. Callee effects must be a subset of the caller’s.
 - `extern` target is `"module.export"` (last `.` splits). Emits `import { export } from "module"`. No `.d.ts` import.
 - `forge run` of an effectful entry function needs `--allow <effect>` for each required effect.
+- `net` lowers to `async` TypeScript (`await` on `net` calls). No `async` keyword in `.fir`.
+- HTTP: `extern fn http_get(url: str) -> Result[str, str] ! { net } = "@forgeir/http.get"` (thin `fetch` facade, not a stdlib).
 - Unknown syntax is `PARSE-001`. Do not invent `use`, `loop`, or `let` yet.
 
 Example:

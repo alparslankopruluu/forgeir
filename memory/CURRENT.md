@@ -1,27 +1,23 @@
 # CURRENT
 
-Current milestone: M3 (interop + effects)
+Current milestone: M4 (adapters + compiler oracles)
 
-Current implementation slice: `extern` npm facades and `! { net|fs|env }`.
+Current implementation slice: `@forgeir/http` over fetch; `pnpm bench` oracles.
 
 ## What is working
 
-- M0 int functions (`examples/add`)
-- Records, `if`/`match`, `bool`, calls (`examples/clamp`)
-- `str`, `list[T]`, `Option[T]`, `Result[T, E]` (`examples/option`)
-- `forge.lock.json` symbol nid table; query/get; `replace_expr`
-- `extern fn ... = "module.export"` (`examples/wrap` → `node:path.basename`)
-- Effects `net`/`fs`/`env`; omit = pure; `EFFECT-001`/`EFFECT-002`
-- `forge run --allow env` (`examples/env` → `node:os.homedir`)
-- MCP tools (5): `forge_status`, `forge_validate`, `forge_query`, `forge_get`, `forge_patch`
+- M0–M3 language, lockfile, query/get, `replace_expr`, `extern`, effects
+- `@forgeir/http.get` thin `fetch` facade (`examples/http`)
+- `net` functions emit as `async` TypeScript; `forge run --allow net`
+- Compiler oracles: 11/11 via `pnpm bench` (no scores)
 
 ## What is incomplete
 
-- LLM benchmark harness / published scores
-- `forge.http` adapter
+- LLM token harness / `bench-vX` / published scores
 - `use` / multi-file modules
 - Rename-preserving nids
 - Patch ops other than `replace_expr`
+- Stay-on-TS vs native `core` decision
 
 ## Current blockers
 
@@ -29,33 +25,32 @@ None.
 
 ## Next highest-priority actions
 
-1. M4: benchmark harness (no scores until N ≥ 3)
-2. `forge.http` over `fetch`
-3. Rename-preserving nids / extra patch ops
+1. LLM token harness (frozen prompts; no README numbers until N ≥ 3)
+2. Rename-preserving nids
+3. Extra patch ops / `use`
 
 ## Relevant files
 
-- `packages/syntax/src/parser.ts`
-- `packages/sema/src/check.ts`
+- `packages/http/src/index.js`
 - `packages/emit-ts/src/emit.ts`
-- `packages/cli/src/main.ts`
-- `examples/wrap/main.fir`
-- `examples/env/main.fir`
+- `benches/harness.ts`
+- `benches/oracles.ts`
+- `examples/http/main.fir`
 
 ## Relevant tests
 
-- `tests/extern.test.ts`
-- `tests/e2e/extern.test.ts`
-- `tests/check.test.ts`
+- `tests/http.test.ts`
+- `tests/e2e/http.test.ts`
+- `tests/e2e/bench.test.ts`
 
 ## Last validated state
 
 ```
-Last validated commit: 5670008
-Current milestone: M3
-Completed: extern npm facades; effect checker; forge run --allow
+Last validated commit: 53514d9
+Current milestone: M4
+Completed: forge.http fetch facade; compiler oracles (11); net→async emit
 In progress: none
 Known issue: TS `number` emit is not i64-accurate (ADR-002); rename allocates a new nid
-Next recommended action: M4 harness / forge.http
-Validation commands: pnpm test && pnpm typecheck && pnpm forge run examples/wrap/main.fir demo && pnpm forge run examples/env/main.fir demo --allow env
+Next recommended action: LLM harness or rename-preserving nids
+Validation commands: pnpm test && pnpm typecheck && pnpm bench
 ```
