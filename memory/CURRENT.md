@@ -44,7 +44,7 @@ None.
 ## Last validated state
 
 ```
-Last validated commit: 09b39ae
+Last validated commit: c7f870c
 Current milestone: M4
 Completed: rename patch retargets lockfile nids
 In progress: none
