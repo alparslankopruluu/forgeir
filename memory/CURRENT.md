@@ -51,7 +51,7 @@ None.
 ## Last validated state
 
 ```
-Last validated commit: 82dfd22
+Last validated commit: 5670008
 Current milestone: M3
 Completed: extern npm facades; effect checker; forge run --allow
 In progress: none
