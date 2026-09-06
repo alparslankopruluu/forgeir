@@ -7,7 +7,7 @@ description: Learn ForgeIR M1 surface syntax, M3 extern/effects, and M2 query/pa
 
 Read `docs/agent/language.md` then `docs/agent/ids.md`. Do not load the full human guide.
 
-M1 includes records, `bool`, `str`, `list[T]`, `Option[T]`, `Result[T, E]`, `if`/`else`, `match`, and calls. M3 adds `extern fn` and `! { net | fs | env }`.
+M1 includes records, `bool`, `str`, `list[T]`, `Option[T]`, `Result[T, E]`, `if`/`else`, `match`, and calls. M3 adds `extern fn` and `! { net | fs | env }`. M5 adds `use examples.add.{add}`.
 
 ```
 fn first_or(xs: list[int], fallback: int) -> int {
@@ -29,6 +29,7 @@ pnpm forge run examples/option/main.fir demo
 pnpm forge run examples/wrap/main.fir demo
 pnpm forge run examples/env/main.fir demo --allow env
 pnpm forge run examples/http/main.fir status_ok <url> --allow net
+pnpm forge run examples/calc/main.fir twice 3
 pnpm bench
 pnpm forge query path.fir
 pnpm forge get path.fir <qid> --detail body
@@ -38,4 +39,4 @@ pnpm forge patch path.fir --qid <qid> --rename <name>
 
 If `check --json` reports errors, repair the `.fir` source. Prefer `forge_patch` preview over rewriting the file. Do not edit emitted `.ts`.
 
-Out of language: `use`, `let`, `loop`. Expect `PARSE-001`. Effectful `forge run` without `--allow` is refused.
+Out of language: `let`, `loop`. Expect `PARSE-001`. Effectful `forge run` without `--allow` is refused.

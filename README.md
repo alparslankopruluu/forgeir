@@ -10,11 +10,11 @@ This thesis is **unproven**. There are no published token-savings figures in thi
 
 ## Current status
 
-**Milestone M4 — adapters + compiler oracles.** Experimental.
+**Milestone M5 — modules.** Experimental.
 
 ### Implemented
 
-- Surface: `module`, `record`, `fn`, `int`, `bool`, `str`, `list[T]`, `Option[T]`, `Result[T, E]`, arithmetic, comparisons, `if`/`else`, `match`, field access, construct, calls
+- Surface: `module`, `use`, `record`, `fn`, `int`, `bool`, `str`, `list[T]`, `Option[T]`, `Result[T, E]`, arithmetic, comparisons, `if`/`else`, `match`, field access, construct, calls
 - Parse, typecheck, JSON diagnostics (`PARSE-001` … `TYPE-004`, `EFFECT-001`, `EFFECT-002`, `EXTERN-001`, `PATCH-001`) including TYPE-002 / EFFECT-001 repair `fixes[]`
 - Deterministic TypeScript ESM emit
 - CLI: `forge parse | check | emit | run | lock | query | get | patch | mcp`
@@ -23,14 +23,15 @@ This thesis is **unproven**. There are no published token-savings figures in thi
 - `extern fn ... = "module.export"` → ESM `import`; typed facade only (no `.d.ts` import)
 - Explicit effects `! { net }`, `! { fs }`, `! { env }` (omit = pure); `net` lowers to `async` TypeScript; `forge run --allow`
 - `@forgeir/http` thin `fetch` facade (`examples/http`)
-- Compiler oracles: `pnpm bench` (11 tasks). LLM harness: `pnpm bench:llm` (skipped without API key). **No scores.**
-- Examples: `examples/add`, `examples/clamp`, `examples/option`, `examples/wrap`, `examples/env`, `examples/http`
+- Compiler oracles: `pnpm bench` (12 tasks). LLM harness: `pnpm bench:llm` (skipped without API key). **No scores.**
+- `use examples.add.{add}` — resolve `qid/main.fir` under cwd; emit ESM imports. Cycles `USE-003`.
+- Examples: `examples/add`, `examples/clamp`, `examples/option`, `examples/wrap`, `examples/env`, `examples/http`, `examples/calc`
 - MCP (5 tools): `forge_status`, `forge_validate`, `forge_query`, `forge_get`, `forge_patch`
 - Agent docs, Memory Bank, ADRs
 
 ### Not implemented (do not treat as shipped)
 
-- Package registry, `use`/multi-file modules
+- Package registry, `let` / `loop`
 - Silent rename (edit the name in `.fir` without the `rename` op) still allocates a new nid
 - Patch ops other than `replace_expr` and `rename`
 - LLVM, WASM, JVM, Swift, Kotlin backends
@@ -51,6 +52,7 @@ pnpm forge run examples/clamp/main.fir clamp10 15    # prints 10
 pnpm forge run examples/option/main.fir demo         # prints 10
 pnpm forge run examples/wrap/main.fir demo           # prints main.fir
 pnpm forge run examples/env/main.fir demo --allow env
+pnpm forge run examples/calc/main.fir twice 3            # prints 6
 pnpm bench
 pnpm bench:llm
 pnpm forge emit examples/add/main.fir

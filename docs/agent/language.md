@@ -4,7 +4,8 @@ Edition: 2026 (hardcoded). File extension: `.fir`. One module per file.
 
 ```
 Module  := "module" Qid Decl*
-Decl    := Record | Fn | Extern
+Decl    := Use | Record | Fn | Extern
+Use     := "use" Qid "." "{" ident* "}"
 Record  := "record" ident "{" Field* "}"
 Field   := ident ":" Type
 Fn      := "fn" ident "(" Params? ")" "->" Type Effects? "{" Expr "}"
@@ -30,16 +31,17 @@ Pattern := int | "_" | "None" | "Some" "(" ident ")" | "Ok" "(" ident ")" | "Err
 - `forge run` of an effectful entry function needs `--allow <effect>` for each required effect.
 - `net` lowers to `async` TypeScript (`await` on `net` calls). No `async` keyword in `.fir`.
 - HTTP: `extern fn http_get(url: str) -> Result[str, str] ! { net } = "@forgeir/http.get"` (thin `fetch` facade, not a stdlib).
-- Unknown syntax is `PARSE-001`. Do not invent `use`, `loop`, or `let` yet.
+- `use examples.add.{add}` imports fns, externs, or records from another `.fir` module (`qid/main.fir` or `qid.fir` under cwd). Cycles are `USE-003`.
+- Unknown syntax is `PARSE-001`. Do not invent `loop` or `let` yet.
 
 Example:
 
 ```
-module examples.wrap
+module examples.calc
 
-extern fn basename(p: str) -> str = "node:path.basename"
+use examples.add.{add}
 
-fn demo() -> str {
-  basename("/tmp/main.fir")
+fn twice(x: int) -> int {
+  add(x, x)
 }
 ```

@@ -1,20 +1,21 @@
 # CURRENT
 
-Current milestone: M4 (adapters + oracles + rename + LLM harness)
+Current milestone: M5 (modules)
 
-Current implementation slice: frozen-prompt LLM token harness (skip without key).
+Current implementation slice: `use examples.add.{add}` across `.fir` files.
 
 ## What is working
 
-- M0–M3 language, lockfile, query/get, patch (`replace_expr`, `rename`), `extern`, effects
-- `@forgeir/http`; compiler oracles (`pnpm bench`)
-- `pnpm bench:llm` with frozen prompts T01/T17/T21; skip without API key; N ≥ 3 gate on means
+- M0–M4 language, lockfile, query/get, patch, extern, effects, http, oracles, LLM harness
+- `use Qid.{name}` resolves `qid/main.fir` or `qid.fir` from cwd
+- `examples/calc` `twice(3) → 6` via `examples.add.add`
+- `USE-001` unresolved, `USE-002` missing export, `USE-003` cycle, `USE-004` duplicate import
 
 ## What is incomplete
 
 - Tagged `bench-vX` / published scores
-- `use` / multi-file modules / cross-file rename
-- Patch ops other than `replace_expr` and `rename`
+- `let` / `loop` / cross-file rename
+- Package registry
 - Stay-on-TS vs native `core` decision
 
 ## Current blockers
@@ -23,28 +24,30 @@ None.
 
 ## Next highest-priority actions
 
-1. `use` / multi-file modules
-2. Tagged LLM evidence (N ≥ 3, do not write README numbers here)
+1. `let` / `loop` or cross-file rename
+2. Tagged LLM evidence (N ≥ 3, no README numbers)
 3. Extra patch ops
 
 ## Relevant files
 
-- `benches/llm/harness.ts`
-- `benches/prompts/`
-- `benches/llm/summary.ts`
+- `packages/syntax/src/parser.ts`
+- `packages/sema/src/check.ts`
+- `packages/sema/src/resolve.ts`
+- `examples/calc/main.fir`
 
 ## Relevant tests
 
-- `tests/llm-harness.test.ts`
+- `tests/use.test.ts`
+- `tests/e2e/use.test.ts`
 
 ## Last validated state
 
 ```
-Last validated commit: 530a8c7
-Current milestone: M4
-Completed: LLM harness with frozen prompts; skip without key; N≥3 mean gate
+Last validated commit: df181be
+Current milestone: M5
+Completed: use imports; calc twice(3)→6; T23 oracle
 In progress: none
 Known issue: TS `number` emit is not i64-accurate (ADR-002); no bench-vX tag
-Next recommended action: use/modules or a tagged LLM run
-Validation commands: pnpm test && pnpm typecheck && pnpm bench && pnpm bench:llm
+Next recommended action: let/loop or tagged LLM run
+Validation commands: pnpm test && pnpm typecheck && pnpm forge run examples/calc/main.fir twice 3 && pnpm bench
 ```

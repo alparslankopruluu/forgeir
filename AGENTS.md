@@ -26,7 +26,7 @@ Node 22+, pnpm 10. Package manager is pinned in `package.json`.
 ## Layout
 
 - `packages/core` — ids, spans, hashes
-- `packages/syntax` — lexer, parser, AST (`extern`, effects)
+- `packages/syntax` — lexer, parser, AST (`use`, `extern`, effects)
 - `packages/sema` — typechecker
 - `packages/diag` — diagnostic codes and JSON
 - `packages/ir` — lockfile and semantic graph index

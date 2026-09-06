@@ -2,7 +2,7 @@
 
 > AI-native semantic IR and compiler for reliable, token-efficient software generation.
 
-ForgeIR is a surface language plus a typed semantic program graph, compiler, and agent interface. Generated TypeScript is not the program. Status: M4 (`@forgeir/http`, compiler oracles, `rename`, LLM harness skip-without-key). Thesis is unproven; do not cite token savings.
+ForgeIR is a surface language plus a typed semantic program graph, compiler, and agent interface. Generated TypeScript is not the program. Status: M5 (`use` modules, plus M4 adapters/oracles/rename/LLM harness). Thesis is unproven; do not cite token savings.
 
 ## Start
 

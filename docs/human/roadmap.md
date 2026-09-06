@@ -18,8 +18,14 @@ Parse, check, emit TypeScript, and run `examples/add`. JSON diagnostics. MCP stu
 
 **Done:** `extern fn ... = "module.export"`, effect checker (`net`/`fs`/`env`, omit = pure), `forge run --allow`.
 
-## M4 — Adapters + compiler oracles (current)
+## M4 — Adapters + compiler oracles
 
 **Done:** `@forgeir/http` over `fetch`, `net` → async TS, `pnpm bench` compiler oracles, same-file `rename`, `pnpm bench:llm` (skip without key; N ≥ 3 gate). No scores. No `bench-vX` tag.
 
-Not done in M4: tagged LLM evidence, `use`/multi-file modules. Stay-on-TS vs native `core` is still open.
+Not done in M4: tagged LLM evidence. Stay-on-TS vs native `core` is still open.
+
+## M5 — Modules (current)
+
+**Done:** `use examples.add.{add}` resolves `qid/main.fir` (or `qid.fir`) from cwd, type-checks exports, emits ESM imports. `examples/calc` `twice(3) → 6`. `USE-001`…`USE-004`.
+
+Not done: `let`/`loop`, cross-file rename, package registry.

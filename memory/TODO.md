@@ -7,8 +7,8 @@
 ## P1
 
 - Additional patch ops beyond `replace_expr` / `rename`
-- `use` / multi-file modules
-- Cross-file rename (needs `use`)
+- Cross-file rename
+- `let` / `loop`
 - Stay-on-TS vs native `core` decision (ADR later)
 
 ## Later

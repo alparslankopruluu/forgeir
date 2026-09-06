@@ -11,6 +11,7 @@ pnpm forge run examples/clamp/main.fir clamp10 15
 pnpm forge run examples/option/main.fir demo
 pnpm forge run examples/wrap/main.fir demo
 pnpm forge run examples/env/main.fir demo --allow env
+pnpm forge run examples/calc/main.fir twice 3
 pnpm bench
 pnpm bench:llm
 pnpm forge emit examples/add/main.fir
@@ -19,7 +20,7 @@ pnpm forge query examples/add/main.fir examples.add
 pnpm forge get examples/add/main.fir examples.add.add@body --detail body
 ```
 
-`forge run` on the add example calls `add(2, 3)` and prints `5`. The clamp example prints `10`. The option demo prints `10`. The wrap demo prints `main.fir`. The env demo needs `--allow env`. `pnpm bench` runs compiler oracles and prints pass/fail with **no scores**. `pnpm bench:llm` skips unless API key and model env vars are set; it still must not write numbers into the README.
+`forge run` on the add example calls `add(2, 3)` and prints `5`. The clamp example prints `10`. The option demo prints `10`. The wrap demo prints `main.fir`. The env demo needs `--allow env`. The calc demo prints `6` (`use examples.add.{add}`). `pnpm bench` runs compiler oracles and prints pass/fail with **no scores**. `pnpm bench:llm` skips unless API key and model env vars are set; it still must not write numbers into the README.
 
 M1 language: `module`, `record`, `fn`, `int`, `bool`, `str`, `list[T]`, `Option[T]`, `Result[T, E]`, arithmetic, comparisons, `if`/`else`, `match`, field access, record construct, calls.
 

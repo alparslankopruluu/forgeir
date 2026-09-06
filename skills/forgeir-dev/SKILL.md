@@ -8,7 +8,7 @@ description: Work on the ForgeIR compiler repository. Use when changing parser, 
 You are working on the compiler, not on an app written in ForgeIR.
 
 1. Read `memory/CURRENT.md` and `AGENTS.md` first. Do not dump `packages/**`.
-2. Language is M1 plus M3 `extern`/`! { net|fs|env }` and M4 `@forgeir/http`. Addressability is M2. Do not add `use`/`let`/`loop`, backends, a package registry, or README scores unless the task says so.
+2. Language includes `use Module.{name}` (M5). Do not add `let`/`loop`, backends, a package registry, or README scores unless the task says so.
 3. Tests live in `tests/`. Write or update a failing test before production code.
 4. Validate with `pnpm test`, `pnpm typecheck`, and `pnpm bench`. `pnpm bench:llm` skips without API config. Never put token figures in the README. For the hello slice also run `pnpm forge run examples/add/main.fir`.
 5. Public artifacts are English. Commits are Conventional Commits.
