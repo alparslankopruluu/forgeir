@@ -14,6 +14,9 @@
     "examples.clamp.clamp/param/x": "nid_bbfde1aff9c03254",
     "examples.clamp.clamp10": "nid_2245a73b4dfa94b2",
     "examples.clamp.clamp10/param/x": "nid_1c612c383c7ee953",
+    "examples.env": "nid_ae60440fe88801ca",
+    "examples.env.demo": "nid_e5f23972a837b692",
+    "examples.env.homedir": "nid_72871eec87ea7b5f",
     "examples.option": "nid_3b2304bfabd407d7",
     "examples.option.demo": "nid_f9f6372e2688a25a",
     "examples.option.empty": "nid_dfaa2f15d64177ff",
@@ -21,6 +24,10 @@
     "examples.option.first_or/param/fallback": "nid_63d6e5f1b209c7d0",
     "examples.option.first_or/param/xs": "nid_8e8b980d0fcc47f6",
     "examples.option.parse_pos": "nid_c5230cf02bd6bee6",
-    "examples.option.parse_pos/param/x": "nid_1dad32a25f9460fc"
+    "examples.option.parse_pos/param/x": "nid_1dad32a25f9460fc",
+    "examples.wrap": "nid_4da34d9f0512b105",
+    "examples.wrap.basename": "nid_726be4a0b01863d5",
+    "examples.wrap.basename/param/p": "nid_22bef0f450b3516b",
+    "examples.wrap.demo": "nid_31e0fd2849437861"
   }
 }

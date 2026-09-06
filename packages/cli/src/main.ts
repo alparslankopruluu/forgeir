@@ -26,6 +26,7 @@ type Flags = {
   qid?: string;
   expr?: string;
   limit: number;
+  allow: string[];
 };
 
 function parseArgv(argv: string[]): { flags: Flags; rest: string[] } {
@@ -35,6 +36,7 @@ function parseArgv(argv: string[]): { flags: Flags; rest: string[] } {
     kind: "symbol",
     detail: "compact",
     limit: 20,
+    allow: [],
   };
   const rest: string[] = [];
   for (let i = 0; i < argv.length; i += 1) {
@@ -70,6 +72,12 @@ function parseArgv(argv: string[]): { flags: Flags; rest: string[] } {
     } else if (arg === "--limit") {
       flags.limit = Number(argv[i + 1] ?? 20);
       i += 1;
+    } else if (arg === "--allow") {
+      const value = argv[i + 1];
+      i += 1;
+      if (value !== undefined) {
+        flags.allow.push(value);
+      }
     } else {
       rest.push(arg);
     }
@@ -157,19 +165,30 @@ async function main(argv: string[]): Promise<number> {
       process.stderr.write(`${formatReport(analyzed.diagnostics)}\n`);
       return 1;
     }
+    const target = analyzed.module.functions.find((fn) => fn.name === fnName);
+    const required = target?.effects ?? [];
+    const missing = required.filter((e) => !flags.allow.includes(e));
+    if (missing.length > 0) {
+      process.stderr.write(
+        `error: ${fnName} requires ${missing.join(", ")}; pass ${missing
+          .map((e) => `--allow ${e}`)
+          .join(" ")}\n`,
+      );
+      return 1;
+    }
     const js = emitTs(analyzed.module, { types: false });
     const tmp = resolve(tmpdir(), `forgeir-run-${randomUUID()}.mjs`);
     await writeFile(tmp, js, "utf8");
     const ns = (await import(pathToFileURL(tmp).href)) as Record<
       string,
-      (...xs: number[]) => number
+      (...xs: unknown[]) => unknown
     >;
     const fn = ns[fnName];
     if (typeof fn !== "function") {
       process.stderr.write(`error: no exported function ${fnName}\n`);
       return 1;
     }
-    process.stdout.write(`${fn(...fnArgs)}\n`);
+    process.stdout.write(`${String(fn(...fnArgs))}\n`);
     return 0;
   }
 
@@ -264,13 +283,13 @@ function requireFile(path: string | undefined): string {
 }
 
 function help(): string {
-  return `ForgeIR M2 compiler
+  return `ForgeIR M3 compiler
 
 Usage:
   forge parse <file>
   forge check [--json] <file>
   forge emit [-o file] <file>
-  forge run <file> [fn] [args...]
+  forge run <file> [fn] [args...] [--allow net|fs|env]
   forge lock <file>
   forge query <file> [selector] [--kind symbol|expr|all]
   forge get <file> <selector> [--detail compact|sig|body]
